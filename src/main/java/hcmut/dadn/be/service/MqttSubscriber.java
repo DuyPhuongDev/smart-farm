@@ -1,28 +1,28 @@
 package hcmut.dadn.be.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import hcmut.dadn.be.repository.SensorDataRepository;
+import hcmut.dadn.be.repository.UserRepository;
+import lombok.RequiredArgsConstructor;
 import org.eclipse.paho.client.mqttv3.*;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 
 @Service
+@RequiredArgsConstructor
 public class MqttSubscriber implements MqttCallback {
 
     private final MqttClient mqttClient;
+    private final SensorDataRepository sensorDataRepository;
+    private final UserRepository userRepository;
+    private final DeviceRepository deviceRepository;
+    private final ObjectMapper objectMapper;
 
-    @Value("${HUMIDITY_FEED}")
-    private String humidityTopic;
-
-    @Value("${PUMP_FEED}")
-    private String pumpTopic;
-
-    public MqttSubscriber(MqttClient mqttClient) {
-        this.mqttClient = mqttClient;
-    }
 
     @EventListener(ContextRefreshedEvent.class)
     public void subscribe() throws Exception {
+        String humidityTopic = deviceRepository.getFeedsByUserId().get;
         mqttClient.setCallback(this);
         mqttClient.subscribe(humidityTopic);  // Đăng ký nhận dữ liệu từ cảm biến độ ẩm
         mqttClient.subscribe(pumpTopic);      // Đăng ký nhận trạng thái máy bơm
