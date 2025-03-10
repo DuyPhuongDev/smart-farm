@@ -1,5 +1,6 @@
 package hcmut.dadn.be.models;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDateTime;
@@ -10,6 +11,9 @@ import java.time.LocalDateTime;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+
+
+
 public class SensorData {
 
     @Id
@@ -23,6 +27,8 @@ public class SensorData {
     private Float temperature;
 
     private Float soilMoisture;
+
+    private Float lux;
 
     @Column(nullable = false, updatable = false)
     private LocalDateTime recordedAt = LocalDateTime.now();

@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.*;
 
 @RequiredArgsConstructor
 @RestController
-@RequestMapping("/api/v1/devices")
+@RequestMapping("${api.prefix}/devices")
 public class DeviceController {
     private final IDeviceService iDeviceService;
 

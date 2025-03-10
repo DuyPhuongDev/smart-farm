@@ -20,16 +20,9 @@ public class PumpHistory {
     @JoinColumn(name = "device_id", nullable = false)
     private Device device; // FK đến Device
 
-    @ManyToOne
-    @JoinColumn(name = "user_id", nullable = true)
-    private User user; // FK đến User (nullable, vì có thể là tự động)
-
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private PumpAction action;
-
-    @Column(columnDefinition = "TEXT")
-    private String reason;
 
     @Column(nullable = false, updatable = false)
     private LocalDateTime timestamp = LocalDateTime.now();

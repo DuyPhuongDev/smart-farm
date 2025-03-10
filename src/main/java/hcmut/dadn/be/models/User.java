@@ -34,10 +34,6 @@ public class User implements UserDetails {
 
     @Column(length = 15)
     private String phone;
-
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Device> devices;
-
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Notification> notifications;
 
