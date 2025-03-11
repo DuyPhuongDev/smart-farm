@@ -10,4 +10,6 @@ public interface UserDeviceTokenRepository extends JpaRepository<UserDeviceToken
     List<UserDeviceToken> findAllByUser(User user);
 
     boolean existsByUser(User user);
+
+    UserDeviceToken findByDeviceToken(String token);
 }

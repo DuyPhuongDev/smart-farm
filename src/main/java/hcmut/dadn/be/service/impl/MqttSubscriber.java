@@ -1,5 +1,6 @@
 package hcmut.dadn.be.service.impl;
 
+import hcmut.dadn.be.dto.NotificationRequest;
 import hcmut.dadn.be.models.*;
 import hcmut.dadn.be.repository.DeviceRepository;
 import hcmut.dadn.be.repository.PumpHistoryRepository;
@@ -151,6 +152,7 @@ public class MqttSubscriber implements MqttCallback {
 
         for (UserDeviceToken deviceToken : deviceTokens) {
             notificationService.sendNotification(deviceToken.getDeviceToken(), title, body);
+            notificationService.saveNotification(new NotificationRequest(deviceToken.getDeviceToken(), title, body));
         }
     }
 

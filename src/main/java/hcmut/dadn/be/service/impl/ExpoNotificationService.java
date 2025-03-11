@@ -1,6 +1,15 @@
 package hcmut.dadn.be.service.impl;
 
+import hcmut.dadn.be.dto.NotificationRequest;
+import hcmut.dadn.be.models.Notification;
+import hcmut.dadn.be.models.NotificationStatus;
+import hcmut.dadn.be.models.User;
+import hcmut.dadn.be.repository.NotificationRepository;
+import hcmut.dadn.be.repository.UserDeviceTokenRepository;
 import hcmut.dadn.be.service.IExpoNotificationService;
+import hcmut.dadn.be.service.IUserDeviceTokenService;
+import hcmut.dadn.be.service.IUserService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import org.springframework.http.*;
@@ -8,8 +17,12 @@ import org.springframework.web.client.RestTemplate;
 import java.util.Map;
 
 @Service
+@RequiredArgsConstructor
 public class ExpoNotificationService implements IExpoNotificationService {
+
     private static final String EXPO_API_URL = "https://exp.host/--/api/v2/push/send";
+    private final UserDeviceTokenRepository userDeviceTokenRepository;
+    private final NotificationRepository notificationRepository;
 
     @Override
     public void sendNotification(String expoPushToken, String title, String body) {
@@ -39,6 +52,19 @@ public class ExpoNotificationService implements IExpoNotificationService {
         } else {
             System.err.println("❌ Failed to send notification: " + response.getBody());
         }
+    }
+
+    @Override
+    public void saveNotification(NotificationRequest request) {
+        // find user by user device token
+        User user = userDeviceTokenRepository.findByDeviceToken(request.getDeviceToken()).getUser();
+        Notification notification = Notification.builder()
+                .user(user)
+                .status(NotificationStatus.UNREAD)
+                .title(request.getTitle())
+                .message(request.getBody())
+                .build();
+        notificationRepository.save(notification);
     }
 }
 

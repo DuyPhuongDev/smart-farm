@@ -2,6 +2,9 @@ package hcmut.dadn.be.models;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.checkerframework.checker.units.qual.C;
+import org.hibernate.annotations.CreationTimestamp;
+
 import java.time.LocalDateTime;
 
 @Entity
@@ -9,6 +12,7 @@ import java.time.LocalDateTime;
 @Getter
 @Setter
 @NoArgsConstructor
+@Builder
 @AllArgsConstructor
 public class Notification {
 
@@ -20,6 +24,9 @@ public class Notification {
     @JoinColumn(name = "user_id", nullable = false)
     private User user; // FK đến User
 
+    @Column(columnDefinition = "TEXT")
+    private String title;
+
     @Column(columnDefinition = "TEXT", nullable = false)
     private String message;
 
@@ -28,5 +35,6 @@ public class Notification {
     private NotificationStatus status = NotificationStatus.UNREAD;
 
     @Column(nullable = false, updatable = false)
+    @CreationTimestamp
     private LocalDateTime sentAt = LocalDateTime.now();
 }

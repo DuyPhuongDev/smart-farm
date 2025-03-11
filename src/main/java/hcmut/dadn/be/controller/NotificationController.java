@@ -1,6 +1,7 @@
 package hcmut.dadn.be.controller;
 
 import hcmut.dadn.be.dto.NotificationRequest;
+import hcmut.dadn.be.service.impl.ExpoNotificationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.*;
@@ -16,6 +17,7 @@ import java.util.Map;
 public class NotificationController {
 
     private static final String EXPO_API_URL = "https://exp.host/--/api/v2/push/send";
+    private final ExpoNotificationService expoNotificationService;
 
     @PostMapping("/send")
     public ResponseEntity<String> sendNotification(@RequestBody NotificationRequest request) {
@@ -45,6 +47,7 @@ public class NotificationController {
 
             // Kiểm tra phản hồi từ Expo
             if (response.getStatusCode() == HttpStatus.OK) {
+                expoNotificationService.saveNotification(request);
                 return ResponseEntity.ok("✅ Notification sent successfully!");
             } else {
                 return ResponseEntity.status(response.getStatusCode()).body("❌ Failed to send notification: " + response.getBody());
