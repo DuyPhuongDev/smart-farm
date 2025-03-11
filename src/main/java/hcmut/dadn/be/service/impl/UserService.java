@@ -1,10 +1,11 @@
-package hcmut.dadn.be.service;
+package hcmut.dadn.be.service.impl;
 
 
 import hcmut.dadn.be.dto.UserDTO;
 import hcmut.dadn.be.exception.DataNotFoundException;
 import hcmut.dadn.be.models.User;
 import hcmut.dadn.be.repository.UserRepository;
+import hcmut.dadn.be.service.IUserService;
 import hcmut.dadn.be.util.JwtTokenUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -17,7 +18,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.util.Optional;
+import java.util.ArrayList;
 
 
 @Service
@@ -43,6 +44,7 @@ public class UserService implements IUserService {
                 .fullName(userDTO.getFullName())
                 .email(userDTO.getEmail())
                 .password(passwordEncoder.encode(userDTO.getPassword()))
+                .deviceTokens(new ArrayList<>())
                 .build();
         return userRepository.save(newUser);
     }

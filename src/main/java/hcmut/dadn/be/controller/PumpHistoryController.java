@@ -2,7 +2,7 @@ package hcmut.dadn.be.controller;
 
 import hcmut.dadn.be.response.ApiResponse;
 import hcmut.dadn.be.response.PumpHistoryResponse;
-import hcmut.dadn.be.service.PumpHistoryService;
+import hcmut.dadn.be.service.impl.PumpHistoryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;

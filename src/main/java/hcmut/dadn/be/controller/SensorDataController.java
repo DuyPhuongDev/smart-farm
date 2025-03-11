@@ -2,7 +2,7 @@ package hcmut.dadn.be.controller;
 
 import hcmut.dadn.be.response.ApiResponse;
 import hcmut.dadn.be.response.SensorDataResponse;
-import hcmut.dadn.be.service.SensorDataService;
+import hcmut.dadn.be.service.impl.SensorDataService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;

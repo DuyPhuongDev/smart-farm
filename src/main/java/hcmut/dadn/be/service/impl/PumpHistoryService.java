@@ -1,4 +1,4 @@
-package hcmut.dadn.be.service;
+package hcmut.dadn.be.service.impl;
 
 import hcmut.dadn.be.models.PumpHistory;
 import hcmut.dadn.be.repository.PumpHistoryRepository;

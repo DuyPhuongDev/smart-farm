@@ -1,10 +1,11 @@
-package hcmut.dadn.be.service;
+package hcmut.dadn.be.service.impl;
 
 import hcmut.dadn.be.dto.DeviceDTO;
 import hcmut.dadn.be.exception.DataNotFoundException;
 import hcmut.dadn.be.models.Device;
 import hcmut.dadn.be.repository.DeviceRepository;
 import hcmut.dadn.be.response.DeviceResponse;
+import hcmut.dadn.be.service.IDeviceService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.paho.client.mqttv3.MqttClient;
@@ -17,7 +18,7 @@ import java.util.List;
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class DeviceService implements IDeviceService{
+public class DeviceService implements IDeviceService {
     private final DeviceRepository deviceRepository;
     private final UserService userService;
     private final MqttClient mqttClient;

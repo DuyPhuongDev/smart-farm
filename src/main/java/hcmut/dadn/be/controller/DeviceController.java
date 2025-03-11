@@ -2,7 +2,6 @@ package hcmut.dadn.be.controller;
 
 import hcmut.dadn.be.dto.DeviceDTO;
 import hcmut.dadn.be.response.ApiResponse;
-import hcmut.dadn.be.service.DeviceService;
 import hcmut.dadn.be.service.IDeviceService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;

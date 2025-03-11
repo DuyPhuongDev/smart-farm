@@ -1,6 +1,5 @@
-package hcmut.dadn.be.service;
+package hcmut.dadn.be.service.impl;
 
-import hcmut.dadn.be.models.SensorData;
 import hcmut.dadn.be.repository.SensorDataRepository;
 import hcmut.dadn.be.response.SensorDataResponse;
 import lombok.RequiredArgsConstructor;
