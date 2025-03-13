@@ -1,0 +1,5 @@
+.DStore
+iot-app/
+model_ML/
+build.sh
+docker-compose.yml
