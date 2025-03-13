@@ -1,0 +1,26 @@
+version: "3.8"
+
+services:
+  backend:
+    build: ./be
+    container_name: spring_app
+    ports:
+      - "9999:8080"
+    depends_on:
+      - predict_api
+    environment:
+      - PREDICT_API_URL=http://predict_api:8000/predict
+    networks:
+      - iot_network
+
+  predict_api:
+    build: ./model_ML
+    container_name: predict_api
+    ports:
+      - "8888:8000"
+    networks:
+      - iot_network
+
+networks:
+  iot_network:
+    driver: bridge
