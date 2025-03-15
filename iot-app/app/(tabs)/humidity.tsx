@@ -1,17 +1,41 @@
 import React from "react";
-import { View, Text, StyleSheet } from "react-native";
-
+import { View, Text, StyleSheet, SafeAreaView } from "react-native";
+import Card from "@/components/Card";
+import Header from "@/components/Header";
+import { SafeAreaProvider } from "react-native-safe-area-context";
+import Chart from "@/components/Chart";
 export default function HumidityDashboard() {
+  const datas = [
+    { value: 50, time: "13:50" },
+    { value: 80, time: "13:50" },
+    { value: 90, time: "13:50" },
+    { value: 70, time: "13:50" },
+    { value: 50, time: "13:50" },
+    { value: 80, time: "13:50" },
+    { value: 90, time: "13:50" },
+    { value: 70, time: "13:50" },
+    { value: 90, time: "13:50" },
+    { value: 70, time: "13:50" },
+  ];
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Humidity</Text>
-      <Text style={styles.data}>-- %</Text>
-    </View>
+    <SafeAreaProvider>
+      <SafeAreaView style={styles.container}>
+        <Header />
+        <Card data={26} title="Độ ẩm" color="#23EBE0" unit="%" />
+        <Chart data={datas} />
+      </SafeAreaView>
+    </SafeAreaProvider>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: "center", alignItems: "center" },
+  container: {
+    flex: 1,
+    backgroundColor: "white",
+    alignItems: "center",
+    justifyContent: "flex-start",
+    gap: 10
+  },
   title: { fontSize: 24, fontWeight: "bold" },
   data: { fontSize: 40, color: "blue" },
 });

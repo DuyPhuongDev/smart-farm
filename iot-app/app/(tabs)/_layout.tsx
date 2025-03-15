@@ -1,6 +1,6 @@
 import { Tabs } from "expo-router";
 import React from "react";
-import { Platform } from "react-native";
+import { Platform, View} from "react-native";
 
 import { HapticTab } from "@/components/HapticTab";
 import { IconSymbol } from "@/components/ui/IconSymbol";
@@ -10,7 +10,8 @@ import { useColorScheme } from "@/hooks/useColorScheme";
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
-
+  const activeColor = "#61D215";
+  const inActiveColor = "black"
   return (
     <Tabs
       initialRouteName="temperature"
@@ -18,13 +19,21 @@ export default function TabLayout() {
         tabBarActiveTintColor: Colors[colorScheme ?? "light"].tint,
         headerShown: false,
         tabBarButton: HapticTab,
-        tabBarBackground: TabBarBackground,
+        tabBarBackground: () => (
+            <View style={{ backgroundColor: "white", flex: 1 }} />
+          ),
         tabBarStyle: Platform.select({
           ios: { position: "absolute" }, // Hiệu ứng blur trên iOS
           default: {},
         }),
       }}
     >
+      <Tabs.Screen
+        name="index"
+        options={{
+          href: null,
+        }}
+      />
       {/* Nhiệt độ */}
       <Tabs.Screen
         name="temperature"
@@ -33,6 +42,8 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => (
             <IconSymbol size={28} name="thermometer" color={color} />
           ),
+          tabBarActiveTintColor:activeColor,
+          tabBarInactiveTintColor:inActiveColor
         }}
       />
 
@@ -41,9 +52,11 @@ export default function TabLayout() {
         name="humidity"
         options={{
           title: "Humidity",
-          tabBarIcon: ({ color }) => (
+          tabBarIcon: ({color }) => (
             <IconSymbol size={28} name="drop.fill" color={color} />
           ),
+          tabBarActiveTintColor:activeColor,
+          tabBarInactiveTintColor:inActiveColor
         }}
       />
 
@@ -55,6 +68,8 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => (
             <IconSymbol size={28} name="leaf.fill" color={color} />
           ),
+          tabBarActiveTintColor:activeColor,
+          tabBarInactiveTintColor:inActiveColor
         }}
       />
 
@@ -66,6 +81,8 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => (
             <IconSymbol size={28} name="sun.max.fill" color={color} />
           ),
+          tabBarActiveTintColor:activeColor,
+          tabBarInactiveTintColor:inActiveColor
         }}
       />
 
@@ -77,6 +94,8 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => (
             <IconSymbol size={28} name="gauge.high" color={color} />
           ),
+          tabBarActiveTintColor:activeColor,
+          tabBarInactiveTintColor:inActiveColor
         }}
       />
     </Tabs>
