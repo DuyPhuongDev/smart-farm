@@ -33,7 +33,7 @@ container:{
     alignItems:'center',
     justifyContent:'flex-end',
     width:'100%',
-    paddingTop:10,
+    paddingTop:30,
     paddingBottom:30,
     paddingHorizontal:20
 },
