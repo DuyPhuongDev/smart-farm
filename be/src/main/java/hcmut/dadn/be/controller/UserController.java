@@ -5,6 +5,7 @@ import hcmut.dadn.be.dto.UserLoginDTO;
 import hcmut.dadn.be.exception.InvalidParamException;
 import hcmut.dadn.be.models.User;
 import hcmut.dadn.be.response.ApiResponse;
+import hcmut.dadn.be.response.UserProfileResponse;
 import hcmut.dadn.be.service.IUserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -41,5 +42,11 @@ public class UserController {
             String token = userService.login(userLoginDTO.getEmail(), userLoginDTO.getPassword());
             return new ApiResponse<>(HttpStatus.CREATED.value(), "success", token);
     }
-
+    
+    @GetMapping("/profile")
+    public ApiResponse<UserProfileResponse> getProfile() {
+        User user = userService.getLoggedUser();
+        return new ApiResponse<>(HttpStatus.OK.value(), "Lấy thông tin người dùng thành công", 
+                UserProfileResponse.fromUser(user));
+    }
 }
