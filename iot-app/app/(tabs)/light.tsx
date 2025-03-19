@@ -4,25 +4,68 @@ import Card from "@/components/Card";
 import Header from "@/components/Header";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import Chart from "@/components/Chart";
-export default function LightDashboard() {
-  const datas = [
-    { value: 50, time: "13:50" },
-    { value: 80, time: "13:50" },
-    { value: 90, time: "13:50" },
-    { value: 70, time: "13:50" },
-    { value: 50, time: "13:50" },
-    { value: 80, time: "13:50" },
-    { value: 90, time: "13:50" },
-    { value: 70, time: "13:50" },
-    { value: 90, time: "13:50" },
-    { value: 70, time: "13:50" },
+import { fetchLux } from "@/utils/api";
+import { useState, useEffect } from "react";
+
+//-------test hardcode data-------//
+interface DataItem {
+  dataId: number;
+  soilMoisture: number;
+  recordedAt: string;
+}
+interface TransformedData {
+  value: number;
+  time: string;
+}
+let testData =[
+    { dataId: 145, soilMoisture: 18.12, recordedAt: "22" },
+    { dataId: 139, soilMoisture: 22.2, recordedAt: "20" },
+    { dataId: 133, soilMoisture: 18.06, recordedAt: "18" },
+    { dataId: 127, soilMoisture: 22.2, recordedAt: "16" },
+    { dataId: 121, soilMoisture: 26.9, recordedAt: "14" },
+    { dataId: 145, soilMoisture: 30.12, recordedAt: "12" },
+    { dataId: 139, soilMoisture: 28.2, recordedAt: "10" },
+    { dataId: 133, soilMoisture: 26.06, recordedAt: "8" },
+    { dataId: 127, soilMoisture: 18.2, recordedAt: "6" },
+    { dataId: 121, soilMoisture: 18.9, recordedAt: "4" },
+    { dataId: 145, soilMoisture: 13.12, recordedAt: "2" },
+    { dataId: 139, soilMoisture: 11.2, recordedAt: "0" },
   ];
+
+  
+export default function LightDashboard() {
+  //--------------fetch real data, chua co backend nen k test ddc--------------//
+
+  const [sensorValue, setSensorValue] = useState<number>(99);
+  const [data, setData] = useState<{ dataId: number;soilMoisture: number; recordedAt: string }[]>([]);
+
+  useEffect(() => {
+
+    async function getData() {
+      const dat = await fetchLux();
+      if (dat && dat.length > 0) {
+        setSensorValue(dat[0].soilMoisture);
+        setData(dat);
+        testData = dat;
+      }
+    }
+
+    getData();
+  }, []);
+
+  const transformData = (testData: DataItem[]): TransformedData[] => {
+    return testData.map(item => ({
+      value: item.soilMoisture,
+      time: item.recordedAt, // Use recordedAt as the time
+    }));
+  };
+  
   return (
     <SafeAreaProvider>
       <SafeAreaView style={styles.container}>
         <Header />
-        <Card data={26} title="Ánh sáng" color="#F1DC00" unit="lux" />
-        <Chart data={datas} />
+        <Card data={sensorValue} title="Ánh sáng" color="#F1DC00" unit="lux" />
+        <Chart data={transformData(testData)} />
       </SafeAreaView>
     </SafeAreaProvider>
   );

@@ -5,13 +5,21 @@ import Card from "@/components/Card";
 import Header from "@/components/Header";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import Chart from "@/components/Chart";
-import { fetchHumidityData } from "@/utils/api";
+import { fetchHumidity } from "@/utils/api";
 
 
-const testData = {
-  status_code: 200,
-  message: "Lấy dữ liệu độ ẩm thành công",
-  data: [
+
+//-------test hardcode data-------//
+interface DataItem {
+  dataId: number;
+  soilMoisture: number;
+  recordedAt: string;
+}
+interface TransformedData {
+  value: number;
+  time: string;
+}
+let testData =[
     { dataId: 145, soilMoisture: 18.12, recordedAt: "22" },
     { dataId: 139, soilMoisture: 22.2, recordedAt: "20" },
     { dataId: 133, soilMoisture: 18.06, recordedAt: "18" },
@@ -24,63 +32,46 @@ const testData = {
     { dataId: 121, soilMoisture: 18.9, recordedAt: "4" },
     { dataId: 145, soilMoisture: 13.12, recordedAt: "2" },
     { dataId: 139, soilMoisture: 11.2, recordedAt: "0" },
-  ],
-};
+  ];
+
+
 
 export default function HumidityDashboard() {
-  //--------------fetch real data, chua co backend nen k test ddc--------------//
-
-  
-
-  // useEffect(() => {
-  //   async function getData() {
-  //     setLoading(true);
-  //     const data = await fetchHumidityData();
-  //     if (data) {
-  //       setSensorValue(data[0]?.soilMoisture ?? 0);
-
-  //       const formattedData = data.map((item: { soilMoisture: number; recordedAt: string }) => ({
-  //         value: item.soilMoisture,
-  //         time: item.recordedAt.split(" ")[1], // Extract time
-  //       }));
-
-  //       setChartData(formattedData);
-  //     }
-  //     setLoading(false);
-  //   }
-
-  //   getData();
-  // }, []);
-
-
   const [sensorValue, setSensorValue] = useState<number>(99);
-  const [chartData, setChartData] = useState<{ value: number; time: string }[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
+  const [data, setData] = useState<{ dataId: number;soilMoisture: number; recordedAt: string }[]>([]);
 
   useEffect(() => {
-    // Simulate data formatting
-    if (testData.data) {
-      setSensorValue(testData.data[0]?.soilMoisture ?? 0);
-      const reversedData = [...testData.data].reverse(); 
-      const formattedData = reversedData.map((item) => ({
-        value: item.soilMoisture,
-        time: item.recordedAt, // Extract only the time
-      }));
-
-      setChartData(formattedData);
-      setLoading(false);
+    async function getData() {
+      const dat = await fetchHumidity();
+      if (dat && dat.length > 0) {
+        setSensorValue(dat[0].soilMoisture);
+        setData(dat);
+        testData = dat;
+      }
     }
+    getData();
   }, []);
+
+  //-------extraxt data------//
+  const transformData = (testData: DataItem[]): TransformedData[] => {
+    return testData.map(item => ({
+      value: item.soilMoisture,
+      time: item.recordedAt, 
+    }));
+  };
+  
   return (
     <SafeAreaProvider>
       <SafeAreaView style={styles.container}>
         <Header />
         <Card data={sensorValue} title="Độ ẩm" color="#23EBE0" unit="%" />
-        <Chart data={chartData} />
+        <Chart data={transformData(testData)} />
       </SafeAreaView>
     </SafeAreaProvider>
   );
 }
+
+
 
 const styles = StyleSheet.create({
   container: {
