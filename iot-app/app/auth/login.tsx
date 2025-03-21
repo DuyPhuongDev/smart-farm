@@ -6,7 +6,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   Image,
-  ActivityIndicator
+  ActivityIndicator,
 } from "react-native";
 import { FontAwesome } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
@@ -15,12 +15,13 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 export default function LoginScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [secureText, setSecureText] = useState(true); 
-  const [loading, setLoading] = useState(false); 
+  const [secureText, setSecureText] = useState(true);
+  const [loading, setLoading] = useState(false);
 
   const router = useRouter();
 
-  const BASE_URL = "http://localhost:9999/api/v1"; 
+  // const BASE_URL = "http://localhost:9999/api/v1";
+  const BASE_URL = "http://192.168.1.12:9999/api/v1";
   //https://run.mocky.io/v3/a2e8842c-bba2-4c97-ac64-065c0e90930a
 
   const handleLogin = async () => {
@@ -28,27 +29,26 @@ export default function LoginScreen() {
       alert("Vui lòng nhập email và mật khẩu!");
       return;
     }
-  
+
     setLoading(true);
     try {
       const response = await fetch(`${BASE_URL}/users/login`, {
-    //   const response = await fetch(`https://run.mocky.io/v3/816b541d-4f59-4588-addd-9b268105ce2f`, {
+        //   const response = await fetch(`https://run.mocky.io/v3/816b541d-4f59-4588-addd-9b268105ce2f`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ email, password }),
       });
-  
+
       const data = await response.json();
-  
+
       if (!response.ok) {
         throw new Error(data.message || "Đăng nhập thất bại!");
       }
-  
-     
+
       await AsyncStorage.setItem("token", data.data);
-  
+
       alert("Đăng nhập thành công!");
       router.push("/(tabs)");
     } catch (error: any) {
@@ -57,7 +57,7 @@ export default function LoginScreen() {
     }
     setLoading(false);
   };
-  
+
   return (
     <View style={styles.container}>
       <Image source={require("./image/logo.png")} style={styles.logo} />
@@ -67,7 +67,12 @@ export default function LoginScreen() {
       <View style={styles.inputWrapper}>
         <Text style={styles.label}>Email</Text>
         <View style={styles.inputContainer}>
-          <FontAwesome name="envelope" size={16} color="gray" style={styles.icon} />
+          <FontAwesome
+            name="envelope"
+            size={16}
+            color="gray"
+            style={styles.icon}
+          />
           <TextInput
             placeholder="Nhập địa chỉ email..."
             value={email}
@@ -106,11 +111,18 @@ export default function LoginScreen() {
         onPress={handleLogin}
         disabled={loading}
       >
-        {loading ? <ActivityIndicator color="white" /> : <Text style={styles.loginButtonText}>Đăng nhập</Text>}
+        {loading ? (
+          <ActivityIndicator color="white" />
+        ) : (
+          <Text style={styles.loginButtonText}>Đăng nhập</Text>
+        )}
       </TouchableOpacity>
 
       {/* Nút Đăng ký */}
-      <TouchableOpacity style={styles.registerButton} onPress={() => router.push("/auth/signup")}>
+      <TouchableOpacity
+        style={styles.registerButton}
+        onPress={() => router.push("/auth/signup")}
+      >
         <Text style={styles.registerButtonText}>Đăng ký</Text>
       </TouchableOpacity>
 
@@ -151,8 +163,16 @@ const styles = StyleSheet.create({
     color: "gray",
     marginBottom: 5,
   },
- 
-  inputContainer: { flexDirection: "row", alignItems: "center", backgroundColor: "white", borderRadius: 20, paddingHorizontal: 10, paddingVertical: 8, width: "100%" },
+
+  inputContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "white",
+    borderRadius: 20,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    width: "100%",
+  },
   icon: {
     marginRight: 10,
   },
