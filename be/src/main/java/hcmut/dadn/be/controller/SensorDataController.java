@@ -39,10 +39,16 @@ public class SensorDataController {
     // }
     
     // 4️⃣ Lấy độ ẩm trung bình theo giờ trong 24 giờ gần nhất
-    @GetMapping("/humidity")
+    @GetMapping("/moisture")
     public ApiResponse<List<HourlySensorDataResponse>> getHourlyMoistureLast24Hours() {
         return new ApiResponse<>(HttpStatus.OK.value(), "Lấy dữ liệu độ ẩm trung bình theo giờ thành công",
                 sensorDataService.getHourlyMoistureLast24Hours());
+    }
+
+    @GetMapping("/humidity")
+    public ApiResponse<List<HourlySensorDataResponse>> getHourlyHumidityLast24Hours() {
+        return new ApiResponse<>(HttpStatus.OK.value(), "Lấy dữ liệu độ ẩm trung bình theo giờ thành công",
+                sensorDataService.getHourlyHumidityLast24Hours());
     }
 
     // 5️⃣ Lấy ánh sáng trung bình theo giờ trong 24 giờ gần nhất

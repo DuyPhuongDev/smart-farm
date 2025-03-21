@@ -60,7 +60,14 @@ public class SensorDataService {
         List<SensorData> temperatureData = sensorDataRepository.findTemperatureDataForHourlyAverage(fromTime);
         return calculateHourlyAverage(temperatureData, SensorData::getTemperature);
     }
-    
+
+    public List<HourlySensorDataResponse> getHourlyHumidityLast24Hours() {
+        LocalDateTime fromTime = LocalDateTime.now().minusHours(24);
+        List<SensorData> humidityData = sensorDataRepository.findHumidityDataForHourlyAverage(fromTime);
+        return calculateHourlyAverage(humidityData, SensorData::getHumidity);
+    }
+
+
     // Phương thức chung để tính trung bình theo giờ
     private List<HourlySensorDataResponse> calculateHourlyAverage(List<SensorData> dataList, 
                                                                  java.util.function.Function<SensorData, Float> valueExtractor) {

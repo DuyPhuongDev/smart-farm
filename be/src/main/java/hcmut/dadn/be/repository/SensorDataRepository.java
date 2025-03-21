@@ -34,4 +34,7 @@ public interface SensorDataRepository extends JpaRepository<SensorData, Long> {
     // 6️⃣ Lấy nhiệt độ theo giờ trong 24 giờ gần nhất
     @Query("SELECT s FROM SensorData s WHERE s.recordedAt >= :fromTime AND s.temperature IS NOT NULL ORDER BY s.recordedAt")
     List<SensorData> findTemperatureDataForHourlyAverage(LocalDateTime fromTime);
+
+    @Query("SELECT s FROM SensorData s WHERE s.recordedAt >= :fromTime AND s.humidity IS NOT NULL ORDER BY s.recordedAt")
+    List<SensorData> findHumidityDataForHourlyAverage(LocalDateTime fromTime);
 }
