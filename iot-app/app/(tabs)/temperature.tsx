@@ -6,7 +6,15 @@ import Header from "@/components/Header";
 import Chart from "@/components/Chart";
 import { fetchTemperature } from "@/utils/api";
 import { useState, useEffect } from "react";
-import mqtt from "mqtt";
+import { connect } from "@taoqf/react-native-mqtt";
+
+
+const ADAFRUIT_USERNAME = "dphuongdev";
+const ADAFRUIT_KEY = "aio_vWpj24h5lR0GXgS89014cgLEOnll";
+const MQTT_BROKER = `wss://io.adafruit.com:443/mqtt`;
+
+const FEED_TEMPERATURE = `${ADAFRUIT_USERNAME}/feeds/temp`;
+
 
 
 interface DataItem {
@@ -37,58 +45,37 @@ export default function TemperatureDashboard() {
   const [sensorValue, setSensorValue] = useState<number>(99);
   const [data, setData] = useState<{ dataId: number;soilMoisture: number; recordedAt: string }[]>([]);
 
+  const mqttClient = connect(MQTT_BROKER, {
+    username: ADAFRUIT_USERNAME,
+    password: ADAFRUIT_KEY,
+  });
 
-  const AIO_USERNAME = "caigidoha"; //
-  const AIO_KEY = "something"; 
-
- useEffect(() => {
-    // Connect to MQTT Broker
-
-    // const client = mqtt.connect(`wss://${AIO_USERNAME}:${AIO_KEY}@io.adafruit.com`, {
-    //   port: 443, 
-    //   protocol: "wss",
-    // });
-    const client = mqtt.connect("ws://localhost:9001");
-
-
-    // client.on("connect", () => {
-    //   console.log("Connected to Adafruit IO!");
-    //   client.subscribe(`${AIO_USERNAME}/feeds/temperature`); 
-    // });
-    client.on("connect", () => {
-      console.log("Connected to MQTT Broker");
-      client.subscribe("iot/temperature"); // Subscribe
+  useEffect(() => {
+    const mqttClient = connect(MQTT_BROKER, {
+      username: ADAFRUIT_USERNAME,
+      password: ADAFRUIT_KEY,
     });
 
-
-
-    // client.on("message", (topic, message) => {
-    //   const AIO_FEED = `${AIO_USERNAME}/feeds/temperature`; 
-      
-    //   if (topic === AIO_FEED) {
-    //     const temp = parseFloat(message.toString());
-    //     console.log("Received:", temp);
-    //     setSensorValue(temp);
-    //   }
-    // });
-    client.on("message", (topic, message) => {
-      if (topic === "iot/temperature") {
-        const temp = parseFloat(message.toString());
-        console.log("Received:", temp);
-        setSensorValue(temp);
-      }
+    mqttClient.on("connect", () => {
+      console.log("✅ Kết nối MQTT thành công!");
+      mqttClient.subscribe(FEED_TEMPERATURE);
     });
 
+    mqttClient.on("message", (topic, message) => {
+      const data = message.toString();
+      console.log(`📡 Nhận MQTT: ${topic} -> ${data}`);
+      if (topic === FEED_TEMPERATURE) {
+        setSensorValue(parseFloat(data)); // ✅ Cập nhật độ ẩm
+        // Cập nhật dữ liệu biểu đồ
+      } 
+    });
+
+    // ✅ Trả về một hàm cleanup để ngắt kết nối khi component unmount
     return () => {
-      client.end(); //unmount
+      console.log("🔌 Ngắt kết nối MQTT...");
+      mqttClient.end();
     };
   }, []);
-
-
-
-
-
-
 
 
 
