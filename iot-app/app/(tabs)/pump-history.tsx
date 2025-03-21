@@ -1,12 +1,56 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { View, Text, StyleSheet, SafeAreaView } from "react-native";
 import { Switch } from "react-native-gesture-handler";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import Header from "@/components/Header";
 import { SafeAreaProvider } from "react-native-safe-area-context";
+import { connect } from "@taoqf/react-native-mqtt";
+// import { MQTT_BROKER, ADAFRUIT_USERNAME, ADAFRUIT_KEY, FEED_PUMP } from "@env";
+
+const ADAFRUIT_USERNAME = "dphuongdev";
+const ADAFRUIT_KEY = "aio_vWpj24h5lR0GXgS89014cgLEOnll";
+const MQTT_BROKER = "wss://io.adafruit.com:443/mqtt";
+const FEED_PUMP = "dphuongdev/feeds/pump";
+
 export default function PumpDashboard() {
   const [isEnabled, setIsEnabled] = useState(false);
-  const toggleSwitch = () => setIsEnabled((previousState) => !previousState);
+  const mqttClientRef = useRef<any>(null);
+
+  useEffect(() => {
+    // ✅ Dùng useRef để lưu client, tránh connect nhiều lần
+    mqttClientRef.current = connect(MQTT_BROKER, {
+      username: ADAFRUIT_USERNAME,
+      password: ADAFRUIT_KEY,
+    });
+
+    mqttClientRef.current.on("connect", () => {
+      console.log("✅ Kết nối MQTT thành công!");
+      mqttClientRef.current.subscribe(FEED_PUMP);
+    });
+
+    mqttClientRef.current.on("message", (topic: string, message: Buffer) => {
+      if (topic === FEED_PUMP) {
+        const data = message.toString();
+        console.log(`📡 Nhận MQTT: ${topic} -> ${data}`);
+        setIsEnabled(data === "ON");
+      }
+    });
+
+    return () => {
+      console.log("🔌 Ngắt kết nối MQTT...");
+      mqttClientRef.current?.end();
+    };
+  }, []);
+
+  // ✅ Gửi lệnh bật/tắt máy bơm qua MQTT
+  const toggleSwitch = () => {
+    const newState = !isEnabled;
+    setIsEnabled(newState);
+    const message = newState ? "ON" : "OFF";
+
+    console.log(`📤 Gửi MQTT: ${FEED_PUMP} -> ${message}`);
+    mqttClientRef.current?.publish(FEED_PUMP, message);
+  };
 
   return (
     <SafeAreaProvider>
