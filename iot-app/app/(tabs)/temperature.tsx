@@ -6,6 +6,7 @@ import Header from "@/components/Header";
 import Chart from "@/components/Chart";
 import { fetchTemperature } from "@/utils/api";
 import { useState, useEffect } from "react";
+import mqtt from "mqtt";
 
 
 interface DataItem {
@@ -35,6 +36,61 @@ export default function TemperatureDashboard() {
 
   const [sensorValue, setSensorValue] = useState<number>(99);
   const [data, setData] = useState<{ dataId: number;soilMoisture: number; recordedAt: string }[]>([]);
+
+
+  const AIO_USERNAME = "caigidoha"; //
+  const AIO_KEY = "something"; 
+
+ useEffect(() => {
+    // Connect to MQTT Broker
+
+    // const client = mqtt.connect(`wss://${AIO_USERNAME}:${AIO_KEY}@io.adafruit.com`, {
+    //   port: 443, 
+    //   protocol: "wss",
+    // });
+    const client = mqtt.connect("ws://localhost:9001");
+
+
+    // client.on("connect", () => {
+    //   console.log("Connected to Adafruit IO!");
+    //   client.subscribe(`${AIO_USERNAME}/feeds/temperature`); 
+    // });
+    client.on("connect", () => {
+      console.log("Connected to MQTT Broker");
+      client.subscribe("iot/temperature"); // Subscribe
+    });
+
+
+
+    // client.on("message", (topic, message) => {
+    //   const AIO_FEED = `${AIO_USERNAME}/feeds/temperature`; 
+      
+    //   if (topic === AIO_FEED) {
+    //     const temp = parseFloat(message.toString());
+    //     console.log("Received:", temp);
+    //     setSensorValue(temp);
+    //   }
+    // });
+    client.on("message", (topic, message) => {
+      if (topic === "iot/temperature") {
+        const temp = parseFloat(message.toString());
+        console.log("Received:", temp);
+        setSensorValue(temp);
+      }
+    });
+
+    return () => {
+      client.end(); //unmount
+    };
+  }, []);
+
+
+
+
+
+
+
+
 
   useEffect(() => {
 
