@@ -6,8 +6,6 @@ services:
     container_name: spring_app
     ports:
       - "9999:8080"
-    depends_on:
-      - predict_api
     environment:
       - PREDICT_API_URL=http://predict_api:8000/predict
     networks:
