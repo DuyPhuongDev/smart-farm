@@ -137,45 +137,45 @@ public class MqttSubscriber implements MqttCallback {
 
             // Gọi Python để dự đoán
             // Kiểm tra nếu đã có đủ dữ liệu để dự đoán
-            if (sensorDataDTO.isReadyForPrediction()) {
-                String pumpStatus = mlService.predictPumpStatus(sensorDataDTO);
-                System.out.println("🚀 Dự đoán bơm: " + pumpStatus);
-                // Nếu cần bật máy bơm, gửi lệnh lên MQTT
-                String pumpTopic = "dphuongdev/feeds/pump"; // MQTT topic để điều khiển bơm 
-                if ("ON".equals(pumpStatus)) {
-                    try {
-                        
-                        // Gửi lệnh qua MQTT
-                        mqttClient.publish(pumpTopic, new MqttMessage("ON".getBytes()));
-
-                        System.out.println("📡 Đã gửi lệnh bật máy bơm lên MQTT!");
-
-                        // send notification to user
-                        String title = "✅ Tự động bật máy bơm!";
-                        String body = "Hệ thống đã tự động tưới!";
-                        sendNotificationToUser(device, title, body);
-                    } catch (MqttException e) {
-                        System.err.println("❌ Lỗi khi gửi MQTT: " + e.getMessage());
-                    }
-                }else{
-                    try {
-                        
-                        // Gửi lệnh qua MQTT
-                        mqttClient.publish(pumpTopic, new MqttMessage("OFF".getBytes()));
-
-                        System.out.println("📡 Đã gửi lệnh tắt máy bơm lên MQTT!");
-
-                        // send notification to user
-                        String title = "✅ Tự động tắt máy bơm!";
-                        String body = "Hệ thống đã tự động ngừng tưới!";
-                        sendNotificationToUser(device, title, body);
-                    } catch (MqttException e) {
-                        System.err.println("❌ Lỗi khi gửi MQTT: " + e.getMessage());
-                    }
-                }
-                // Reset dữ liệu để nhận batch mới
-                sensorDataDTO.clearData();
-            }
+//            if (sensorDataDTO.isReadyForPrediction()) {
+//                String pumpStatus = mlService.predictPumpStatus(sensorDataDTO);
+//                System.out.println("🚀 Dự đoán bơm: " + pumpStatus);
+//                // Nếu cần bật máy bơm, gửi lệnh lên MQTT
+//                String pumpTopic = "dphuongdev/feeds/pump"; // MQTT topic để điều khiển bơm
+//                if ("ON".equals(pumpStatus)) {
+//                    try {
+//
+//                        // Gửi lệnh qua MQTT
+//                        mqttClient.publish(pumpTopic, new MqttMessage("ON".getBytes()));
+//
+//                        System.out.println("📡 Đã gửi lệnh bật máy bơm lên MQTT!");
+//
+//                        // send notification to user
+//                        String title = "✅ Tự động bật máy bơm!";
+//                        String body = "Hệ thống đã tự động tưới!";
+//                        sendNotificationToUser(device, title, body);
+//                    } catch (MqttException e) {
+//                        System.err.println("❌ Lỗi khi gửi MQTT: " + e.getMessage());
+//                    }
+//                }else{
+//                    try {
+//
+//                        // Gửi lệnh qua MQTT
+//                        mqttClient.publish(pumpTopic, new MqttMessage("OFF".getBytes()));
+//
+//                        System.out.println("📡 Đã gửi lệnh tắt máy bơm lên MQTT!");
+//
+//                        // send notification to user
+//                        String title = "✅ Tự động tắt máy bơm!";
+//                        String body = "Hệ thống đã tự động ngừng tưới!";
+//                        sendNotificationToUser(device, title, body);
+//                    } catch (MqttException e) {
+//                        System.err.println("❌ Lỗi khi gửi MQTT: " + e.getMessage());
+//                    }
+//                }
+//                // Reset dữ liệu để nhận batch mới
+//                sensorDataDTO.clearData();
+//            }
 
             // Thêm data vào batch
 //            synchronized (batchData) {
