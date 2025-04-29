@@ -10,14 +10,14 @@ import {
 import { useAppTheme } from "@/hooks/useAppTheme";
 import { Platform } from "react-native";
 import * as Notifications from "expo-notifications";
-import { useUser } from "@/contexts/UserContext";
+import { useGlobal } from "@/contexts/GlobalContext";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import { useTheme } from "@/contexts/ThemeContext";
 
 export default function ModuleLayout() {
   const theme = useAppTheme();
-  const { user } = useUser();
+  const { user } = useGlobal();
   const insets = useSafeAreaInsets();
   const [notificationCount, setNotificationCount] = React.useState(0);
   const { isDarkMode } = useTheme();
@@ -117,6 +117,15 @@ export default function ModuleLayout() {
             href: null,
             title: "Chi tiết vườn",
             headerTitle: "Chi tiết vườn",
+          }}
+        />
+
+        <Tabs.Screen
+          name="gardens/pumps/[id]"
+          options={{
+            href: null,
+            title: "Máy bơm - Vườn",
+            headerTitle: "Máy bơm",
           }}
         />
         {/* Add configurations to hide newly created garden screens */}

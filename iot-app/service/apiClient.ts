@@ -5,9 +5,15 @@ import axios, {
   AxiosError,
 } from "axios";
 import { getItem, removeItem, setItem } from "@/utils/asyncStorage";
-import { AUTH_KEY, type LoginData } from "@/modules/auth/types/auth";
+import { AUTH_KEY, type LoginData } from "@/types";
 import { AUTH_ENDPOINTS } from "./endpoints";
 import env from "@/config/environment";
+import { Alert } from "react-native";
+
+// Interface cho originalRequest để đảm bảo type safety
+interface CustomAxiosRequestConfig extends AxiosRequestConfig {
+  _retry?: boolean;
+}
 
 /**
  * API Client Configuration
@@ -15,8 +21,9 @@ import env from "@/config/environment";
  * Configured Axios instance with:
  * - Base URL from .env using react-native-dotenv
  * - Authentication token handling with auto refresh
- * - Error handling with automatic logout
+ * - Network and error handling with automatic logout
  * - Request/response debugging
+ * - Integration with AsyncStorage error handling
  */
 
 // Create API request configuration
@@ -52,7 +59,7 @@ const onTokenRefreshed = (token: string) => {
 // Function to refresh token
 const refreshToken = async (): Promise<string | null> => {
   try {
-    // Refresh token is handled by httpOnly cookie, so no need to send it
+    // Refresh token is handled by httpOnly cookie
     const response = await axios.post(
       `${env.apiUrl}/${env.apiVersion}${AUTH_ENDPOINTS.REFRESH}`,
       {},
@@ -63,15 +70,29 @@ const refreshToken = async (): Promise<string | null> => {
     const { access_token } = response.data;
 
     // Update stored token
-    const authData = await getItem<LoginData>(AUTH_KEY);
-    if (authData) {
-      await setItem(AUTH_KEY, { ...authData, access_token });
+    try {
+      const authData = await getItem<LoginData>(AUTH_KEY);
+      if (authData) {
+        await setItem(AUTH_KEY, { ...authData, access_token });
+      }
+      return access_token;
+    } catch (storageError) {
+      console.error(
+        "Failed to update auth data in AsyncStorage:",
+        storageError
+      );
+      return null;
     }
-
-    return access_token;
   } catch (error) {
     // Failed to refresh token, logout user
-    await removeItem(AUTH_KEY);
+    try {
+      await removeItem(AUTH_KEY);
+    } catch (storageError) {
+      console.error(
+        "Failed to remove auth data from AsyncStorage:",
+        storageError
+      );
+    }
     return null;
   }
 };
@@ -87,9 +108,13 @@ apiClient.interceptors.request.use(async (config) => {
   }
 
   // Add authentication token if available
-  const data = await getItem<LoginData>(AUTH_KEY);
-  if (data?.access_token) {
-    config.headers.Authorization = `Bearer ${data.access_token}`;
+  try {
+    const data = await getItem<LoginData>(AUTH_KEY);
+    if (data?.access_token) {
+      config.headers.Authorization = `Bearer ${data.access_token}`;
+    }
+  } catch (error) {
+    console.error("Failed to read auth data from AsyncStorage:", error);
   }
   return config;
 });
@@ -104,8 +129,16 @@ apiClient.interceptors.response.use(
     return response;
   },
   async (error: AxiosError) => {
-    const originalRequest: any = error.config;
+    const originalRequest: CustomAxiosRequestConfig =
+      error.config as CustomAxiosRequestConfig;
     const status = error.response?.status;
+
+    // Check for network error
+    if (!error.response && error.message.includes("Network Error")) {
+      return Promise.reject(
+        "Không có kết nối mạng. Vui lòng kiểm tra kết nối của bạn."
+      );
+    }
 
     // Token expired, try to refresh if not already refreshing
     if (status === 401 && !originalRequest._retry && !isRefreshing) {
@@ -118,6 +151,7 @@ apiClient.interceptors.response.use(
 
         if (newToken) {
           // Update Authorization header with new token
+          originalRequest.headers = originalRequest.headers || {};
           originalRequest.headers.Authorization = `Bearer ${newToken}`;
           // Notify subscribers that token has been refreshed
           onTokenRefreshed(newToken);
@@ -125,12 +159,17 @@ apiClient.interceptors.response.use(
           // Retry original request
           return apiClient(originalRequest);
         } else {
-          // Token refresh failed, redirect to login
+          // Token refresh failed, notify UI
           isRefreshing = false;
+          Alert.alert(
+            "Lỗi",
+            "Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại."
+          );
           return Promise.reject("Phiên đăng nhập hết hạn");
         }
       } catch (refreshError) {
         isRefreshing = false;
+        Alert.alert("Lỗi", "Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.");
         return Promise.reject("Phiên đăng nhập hết hạn");
       }
     }
@@ -140,6 +179,7 @@ apiClient.interceptors.response.use(
       // Queue request to be retried later
       return new Promise((resolve) => {
         subscribeTokenRefresh((token: string) => {
+          originalRequest.headers = originalRequest.headers || {};
           originalRequest.headers.Authorization = `Bearer ${token}`;
           resolve(apiClient(originalRequest));
         });
@@ -148,13 +188,21 @@ apiClient.interceptors.response.use(
 
     // Handle other auth errors
     else if (status === 401 || status === 403) {
-      // Remove token and reject
-      await removeItem(AUTH_KEY);
-      return Promise.reject(
+      // Remove token and notify UI
+      try {
+        await removeItem(AUTH_KEY);
+      } catch (storageError) {
+        console.error(
+          "Failed to remove auth data from AsyncStorage:",
+          storageError
+        );
+      }
+      const errorMessage =
         status === 401
-          ? "Phiên đăng nhập hết hạn"
-          : "Bạn không có quyền truy cập"
-      );
+          ? "Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại."
+          : "Bạn không có quyền truy cập.";
+      Alert.alert("Lỗi", errorMessage);
+      return Promise.reject(errorMessage);
     }
 
     // Log errors in debug mode
@@ -162,7 +210,10 @@ apiClient.interceptors.response.use(
       console.error("API Error:", error.response?.data || error.message);
     }
 
-    return Promise.reject(error);
+    return Promise.reject(
+      (error.response?.data as { message?: string })?.message ||
+        "Đã xảy ra lỗi. Vui lòng thử lại."
+    );
   }
 );
 

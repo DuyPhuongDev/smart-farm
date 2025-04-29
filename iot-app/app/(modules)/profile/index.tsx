@@ -10,7 +10,7 @@ import {
   Pressable,
   Alert,
 } from "react-native";
-import { useUser } from "@/contexts/UserContext";
+import { useGlobal } from "@/contexts/GlobalContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useAppTheme } from "@/hooks/useAppTheme";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -59,7 +59,7 @@ const CustomSwitch = ({
 );
 
 export default function ProfileScreen() {
-  const { user, signOut } = useUser();
+  const { user, signOut } = useGlobal();
   const appTheme = useAppTheme();
   const {
     setTheme,

@@ -84,3 +84,11 @@ export enum NotificationMethod {
   SMS = "SMS",
   IN_APP = "IN_APP",
 }
+
+// pump status enum
+export enum PumpStatus {
+  ON = "ON",
+  OFF = "OFF",
+  MAINTENANCE = "MAINTENANCE",
+  ERROR = "ERROR",
+}

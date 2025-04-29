@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef, useEffect } from "react";
+import React, { useState, useMemo } from "react";
 import {
   View,
   Text,
@@ -11,7 +11,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAppTheme } from "@/hooks/useAppTheme";
-import { useUser } from "@/contexts/UserContext";
+import { useGlobal } from "@/contexts/GlobalContext";
 import { router } from "expo-router";
 import {
   Ionicons,
@@ -19,47 +19,62 @@ import {
   MaterialCommunityIcons,
   FontAwesome5,
 } from "@expo/vector-icons";
-import { connect, MqttClient } from "@taoqf/react-native-mqtt";
-import env from "@/config/environment";
-
-const {
-  adafruitUsername,
-  adafruitKey,
-  mqttBroker,
-  feedTemperature,
-  feedHumidity,
-  feedLight,
-  feedMoisture,
-  feedPump,
-} = env;
+import type { SensorData, Garden, SensorInfo, SensorStatus } from "@/types";
 
 // Mocked data for development
 const GARDENS_DATA = [
   {
     id: 1,
-    name: "Vườn của phương đẹp trai",
+    name: "Vườn cà chua",
     cropName: "Cà chua",
     cropStage: "Đang ra hoa",
     thumbnail: "https://images.unsplash.com/photo-1591857177580-dc82b9ac4e1e",
     location: "Nhà",
-    sensors: {
-      1: "temperature",
-      2: "humidity",
-      3: "soilMoisture",
-      4: "light",
-      5: "pump",
-    },
+    groupName: "garden1",
+    sensors: [
+      {
+        id: 1,
+        type: "temperature",
+        feedName: "temperature",
+      },
+      {
+        id: 2,
+        type: "humidity",
+        feedName: "humidity",
+      },
+      {
+        id: 3,
+        type: "soilMoisture",
+        feedName: "moisture",
+      },
+      {
+        id: 4,
+        type: "light",
+        feedName: "light",
+      },
+      {
+        id: 5,
+        type: "pump",
+        feedName: "pump1",
+      },
+      {
+        id: 5,
+        type: "pump",
+        feedName: "pump2",
+      },
+    ],
     lastActivity: "Tưới cây (2 giờ trước)",
   },
   {
     id: 2,
-    name: "Vườn của phương đẹp trai",
-    cropName: "Cà chua",
-    cropStage: "Đang ra hoa",
+    name: "Vườn trái cây",
+    cropName: "Táo",
+    cropStage: "Đang phát triển",
     thumbnail: "https://images.unsplash.com/photo-1591857177580-dc82b9ac4e1e",
     location: "Nhà",
-    sensors: {},
-    lastActivity: "Tưới cây (2 giờ trước)",
+    groupName: "garden2",
+    sensors: [],
+    lastActivity: "Tưới cây (3 giờ trước)",
   },
 ];
 
@@ -67,183 +82,72 @@ const SENSOR_INFO = [
   {
     id: 1,
     gardenId: 1,
-    gardenName: "Vườn của phương đẹp trai",
+    gardenName: "Vườn cà chua",
     type: "temperature",
     icon: "thermometer",
     unit: "°C",
+    feedName: "temperature",
+    groupName: "garden1",
   },
   {
     id: 2,
     gardenId: 1,
-    gardenName: "Vườn của phương đẹp trai",
+    gardenName: "Vườn cà chua",
     type: "humidity",
     icon: "water-percent",
     unit: "%",
+    feedName: "humidity",
+    groupName: "garden1",
   },
   {
     id: 3,
     gardenId: 1,
-    gardenName: "Vườn của phương đẹp trai",
+    gardenName: "Vườn cà chua",
     type: "soilMoisture",
     icon: "water",
     unit: "%",
+    feedName: "moisture",
+    groupName: "garden1",
   },
   {
     id: 4,
     gardenId: 1,
-    gardenName: "Vườn của phương đẹp trai",
+    gardenName: "Vườn cà chua",
     type: "light",
     icon: "white-balance-sunny",
     unit: "lux",
+    feedName: "light",
+    groupName: "garden1",
   },
   {
     id: 5,
     gardenId: 1,
-    gardenName: "Vườn của phương đẹp trai",
+    gardenName: "Vườn cà chua",
     type: "pump",
     icon: "water-pump",
+    feedName: "pump1",
+    groupName: "garden1",
+  },
+  {
+    id: 6,
+    gardenId: 1,
+    gardenName: "Vườn cà chua",
+    type: "pump",
+    icon: "water-pump",
+    feedName: "pump2",
+    groupName: "garden1",
   },
 ];
 
-// Define Garden and SensorData interfaces
-interface Garden {
-  id: number;
-  name: string;
-  cropName: string;
-  cropStage: string;
-  thumbnail: string;
-  location: string;
-  // map id:type
-  sensors: {
-    [key: number]: string;
-  };
-  lastActivity: string;
-}
-
-interface SensorInfo {
-  id: number;
-  gardenId: number;
-  gardenName: string;
-  type: string;
-  icon: string;
-  unit?: string;
-}
-
-interface SensorData {
-  sensorId: number;
-  value: number;
-  status: "normal" | "warning" | "critical" | "on" | "off";
-  timestamp: string;
-}
-
 export default function HomeScreen() {
   const theme = useAppTheme();
-  const { user } = useUser();
+  const { user, mqttMessages } = useGlobal();
   const [refreshing, setRefreshing] = useState(false);
   const [gardens, setGardens] = useState(GARDENS_DATA);
   const [sensorInfo, setSensorInfo] = useState(SENSOR_INFO);
-  const [sensorData, setSensorData] = useState<SensorData[]>([]);
   const [selectedGarden, setSelectedGarden] = useState<number | null>(1); // Default selected garden ID
-  const sensorDataMap = useMemo(() => {
-    const map = new Map<number, SensorData>();
-    sensorData.forEach((d) => map.set(d.sensorId, d));
-    return map;
-  }, [sensorData]);
-
+  console.log("MQTT Messages:", mqttMessages);
   const styles = useMemo(() => createStyles(theme), [theme]);
-
-  // ✅ Dùng useRef để giữ kết nối MQTT (tránh bị tạo lại khi re-render)
-  const mqttClientRef = useRef<MqttClient | null>(null);
-
-  useEffect(() => {
-    if (!mqttClientRef.current) {
-      // ✅ Tạo kết nối MQTT một lần duy nhất
-      mqttClientRef.current = connect(mqttBroker, {
-        username: adafruitUsername,
-        password: adafruitKey,
-      });
-
-      mqttClientRef.current.on("connect", () => {
-        console.log("✅ Kết nối MQTT thành công!");
-        mqttClientRef.current?.subscribe(feedTemperature);
-        mqttClientRef.current?.subscribe(feedHumidity);
-        mqttClientRef.current?.subscribe(feedLight);
-        mqttClientRef.current?.subscribe(feedMoisture);
-        mqttClientRef.current?.subscribe(feedPump);
-      });
-
-      // MQTT message handler
-      mqttClientRef.current.on("message", (topic, message) => {
-        // Find the sensorId based on the topic
-        let sensorId: number | null = null;
-
-        if (topic === feedTemperature) {
-          sensorId = 1; // Assuming 1 is the sensorId for temperature
-        } else if (topic === feedHumidity) {
-          sensorId = 2; // Assuming 2 is the sensorId for humidity
-        } else if (topic === feedLight) {
-          sensorId = 3; // Assuming 3 is the sensorId for light
-        } else if (topic === feedMoisture) {
-          sensorId = 4; // Assuming 4 is the sensorId for moisture
-        } else if (topic === feedPump) {
-          sensorId = 5; // Assuming 5 is the sensorId for pump
-        }
-
-        const changeValue = (value: string) => {
-          if (sensorId === 5) {
-            return value === "ON" ? 1 : 0;
-          }
-          return parseFloat(value);
-        };
-
-        const newValue = changeValue(message.toString());
-        const timestamp = new Date().toISOString();
-
-        if (sensorId !== null) {
-          // Check if the sensor already exists in sensorData
-          setSensorData((prevData) => {
-            const updatedData = [...prevData];
-            const sensorIndex = updatedData.findIndex(
-              (d) => d.sensorId === sensorId
-            );
-
-            if (sensorIndex !== -1) {
-              // If the sensor exists, update it
-              updatedData[sensorIndex] = {
-                ...updatedData[sensorIndex],
-                value: newValue,
-                timestamp,
-              };
-            } else {
-              // If the sensor does not exist, add a new one
-              let data: SensorData = {
-                sensorId,
-                value: newValue,
-                status: "normal", // Assuming "normal" status by default
-                timestamp,
-              };
-
-              if (sensorId === 5) {
-                data.status = newValue === 1 ? "on" : "off";
-              }
-
-              updatedData.push(data);
-            }
-            return updatedData;
-          });
-        }
-      });
-    }
-
-    // ✅ Cleanup khi component unmount
-    return () => {
-      if (mqttClientRef.current) {
-        console.log("🔌 Ngắt kết nối MQTT...");
-        mqttClientRef.current.end();
-        mqttClientRef.current = null;
-      }
-    };
-  }, []);
 
   // Format greeting based on time of day
   const getGreeting = () => {
@@ -264,7 +168,9 @@ export default function HomeScreen() {
   }, []);
 
   const filteredSensorInfo = selectedGarden
-    ? sensorInfo.filter((sensor) => sensor.gardenId === selectedGarden)
+    ? sensorInfo.filter(
+        (sensor) => sensor.gardenId === selectedGarden && sensor.type !== "pump"
+      )
     : sensorInfo;
 
   const getStatusColor = (status: string) => {
@@ -279,6 +185,32 @@ export default function HomeScreen() {
         return theme.success;
     }
   };
+
+  function getStatusByValue(sensorType: string, value: number): SensorStatus {
+    switch (sensorType) {
+      case "temperature":
+        if (value > 40) return "critical";
+        if (value > 30) return "warning";
+        return "normal";
+
+      case "humidity":
+        if (value < 20) return "critical";
+        if (value < 40) return "warning";
+        return "normal";
+
+      case "light":
+        if (value < 5) return "warning";
+        return "normal";
+
+      case "soilMoisture":
+        if (value < 30) return "critical";
+        if (value < 50) return "warning";
+        return "normal";
+
+      default:
+        return "normal";
+    }
+  }
 
   const getSensorIcon = (type: string, icon: string) => {
     // Use the provided icon or fall back to a default based on type
@@ -301,31 +233,34 @@ export default function HomeScreen() {
     let humidityData: SensorData | undefined;
     let soilMoistureData: SensorData | undefined;
     let lightData: SensorData | undefined;
-    let pumpData: SensorData | undefined;
 
+    // mapp function to get sensor data
     const sensorMap: { [key: string]: (sensor: SensorData) => void } = {
       temperature: (s) => (temperatureData = s),
       humidity: (s) => (humidityData = s),
       soilMoisture: (s) => (soilMoistureData = s),
       light: (s) => (lightData = s),
-      pump: (s) => (pumpData = s),
     };
 
-    Object.keys(item.sensors).forEach((key) => {
-      const sensorId = parseInt(key);
-      const sensor = sensorDataMap.get(sensorId) ?? {
+    const getSensorValue = (feedName: string): number => {
+      const feedKey = `${item.groupName}.${feedName}`; // Ví dụ: "garden1.temperature"
+      const mqttValue = mqttMessages[feedKey];
+      if (mqttValue !== undefined) {
+        return parseFloat(mqttValue);
+      }
+      return 0;
+    };
+
+    item.sensors.forEach((sensor) => {
+      if (sensor.type === "pump") return;
+      const sensorId = sensor.id;
+      const feedName = sensor.feedName;
+      sensorMap[sensor.type]?.({
         sensorId,
-        value: 0,
+        value: getSensorValue(feedName),
         status: "normal",
         timestamp: new Date().toISOString(),
-      };
-
-      if (sensorId === 5) {
-        sensor.status = sensor.value === 1 ? "on" : "off";
-      }
-
-      const sensorType = item.sensors[sensorId];
-      sensorMap[sensorType]?.(sensor);
+      });
     });
 
     return (
@@ -425,9 +360,12 @@ export default function HomeScreen() {
             </View>
           ) : (
             <View style={styles.sensorPreviewContainer}>
-              <Text style={styles.sensorValue}>No sensors</Text>
+              <Text style={[styles.sensorValue, { color: theme.textTertiary }]}>
+                No sensors
+              </Text>
             </View>
           )}
+
           <View style={styles.gardenFooter}>
             <Text style={[styles.lastActivity, { color: theme.textTertiary }]}>
               {item.lastActivity}
@@ -439,21 +377,12 @@ export default function HomeScreen() {
   };
 
   const renderSensorItem = ({ item }: { item: SensorInfo }) => {
-    // Tìm data realtime theo id
-    const sensorRealtimeData = sensorDataMap.get(item.id);
-
-    const generateValue = () => {
-      if (item.id === 5) {
-        return sensorRealtimeData
-          ? sensorRealtimeData.value === 1
-            ? "ON"
-            : "OFF"
-          : "OFF";
-      }
-      return sensorRealtimeData ? sensorRealtimeData.value : 0;
-    };
-    const status = sensorRealtimeData ? sensorRealtimeData.status : "normal";
-    const timestamp = sensorRealtimeData ? sensorRealtimeData.timestamp : "";
+    const feedKey = `${item.groupName}.${item.feedName}`; // Ví dụ: "garden1.temperature"
+    console.log("Feed Key:", feedKey);
+    const mqttValue = mqttMessages[feedKey];
+    const newValue = mqttValue !== undefined ? parseFloat(mqttValue) : 0;
+    const status = getStatusByValue(item.type, newValue);
+    const timestamp = new Date().toISOString();
 
     return (
       <TouchableOpacity
@@ -492,7 +421,7 @@ export default function HomeScreen() {
 
         <View style={styles.sensorValueContainer}>
           <Text style={[styles.sensorValueText, { color: theme.text }]}>
-            {generateValue()}
+            {newValue}
             <Text style={[styles.sensorUnit, { color: theme.textSecondary }]}>
               {item.unit}
             </Text>
@@ -513,10 +442,6 @@ export default function HomeScreen() {
         )}
       </TouchableOpacity>
     );
-  };
-
-  const togglePump = () => {
-    console.log("Toggle pump");
   };
 
   return (
@@ -727,7 +652,9 @@ export default function HomeScreen() {
 
             <TouchableOpacity
               style={[styles.quickAction, { backgroundColor: theme.card }]}
-              onPress={togglePump}
+              onPress={() =>
+                router.push(`/(modules)/gardens/pumps/${selectedGarden}`)
+              }
             >
               <View
                 style={[
@@ -742,11 +669,7 @@ export default function HomeScreen() {
                 />
               </View>
               <Text style={[styles.quickActionText, { color: theme.text }]}>
-                {sensorDataMap.get(5)
-                  ? sensorDataMap.get(5)
-                    ? "ON"
-                    : "OFF"
-                  : "No pump"}
+                Pump Action
               </Text>
             </TouchableOpacity>
 

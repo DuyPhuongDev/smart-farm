@@ -14,7 +14,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import { Ionicons } from "@expo/vector-icons";
-import { useUser } from "@/contexts/UserContext";
+import { useGlobal } from "@/contexts/GlobalContext";
 import { useAppTheme } from "@/hooks/useAppTheme";
 import { useTheme } from "@/contexts/ThemeContext";
 
@@ -29,7 +29,7 @@ export default function AuthScreen() {
 
   const styles = useMemo(() => createStyles(theme), [theme]);
 
-  const { signIn } = useUser();
+  const { signIn } = useGlobal();
 
   const handleSignIn = async () => {
     if (!username || !password) {

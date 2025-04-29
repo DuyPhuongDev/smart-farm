@@ -9,12 +9,12 @@ import { useFonts } from "expo-font";
 import * as SplashScreen from "expo-splash-screen"; // Fixed import
 import { getItem, setItem } from "@/utils/asyncStorage"; // Import setItem
 import { SafeAreaProvider } from "react-native-safe-area-context";
-import { UserProvider, useUser } from "@/contexts/UserContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import * as Notifications from "expo-notifications";
 import { Text, View, StyleSheet, TouchableOpacity } from "react-native";
 import { ONBOARDING_COMPLETED_KEY } from "@/constants/strings"; // Import the constant
+import { GlobalProvider, useGlobal } from "@/contexts/GlobalContext";
 
 // Configure notifications with a simple try-catch pattern
 try {
@@ -102,7 +102,7 @@ class ErrorBoundary extends React.Component<
 // Internal component to handle protected routes
 function RootLayoutNavigator() {
   const segments = useSegments();
-  const { user, isLoading } = useUser();
+  const { user, isLoading } = useGlobal();
   const navigationState = useRootNavigationState();
 
   useEffect(() => {
@@ -183,11 +183,11 @@ export default function RootLayout() {
     <ErrorBoundary>
       <GestureHandlerRootView style={{ flex: 1 }}>
         <ThemeProvider>
-          <UserProvider>
+          <GlobalProvider>
             <SafeAreaProvider>
               <RootLayoutNavigator />
             </SafeAreaProvider>
-          </UserProvider>
+          </GlobalProvider>
         </ThemeProvider>
       </GestureHandlerRootView>
     </ErrorBoundary>
