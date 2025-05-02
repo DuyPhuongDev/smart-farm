@@ -1,7 +1,6 @@
 package hcmut.dadn.be.service;
 
-import hcmut.dadn.be.dto.NotificationRequest;
-import hcmut.dadn.be.models.Notification;
+import hcmut.dadn.be.dto.request.NotificationRequest;
 
 public interface IExpoNotificationService {
     void sendNotification(String expoPushToken, String title, String body);

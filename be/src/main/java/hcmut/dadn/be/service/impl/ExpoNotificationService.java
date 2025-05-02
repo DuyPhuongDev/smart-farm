@@ -1,14 +1,11 @@
 package hcmut.dadn.be.service.impl;
 
-import hcmut.dadn.be.dto.NotificationRequest;
-import hcmut.dadn.be.models.Notification;
-import hcmut.dadn.be.models.NotificationStatus;
+import hcmut.dadn.be.dto.request.NotificationRequest;
+import hcmut.dadn.be.models.notification.Notification;
 import hcmut.dadn.be.models.User;
 import hcmut.dadn.be.repository.NotificationRepository;
 import hcmut.dadn.be.repository.UserDeviceTokenRepository;
 import hcmut.dadn.be.service.IExpoNotificationService;
-import hcmut.dadn.be.service.IUserDeviceTokenService;
-import hcmut.dadn.be.service.IUserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -60,7 +57,6 @@ public class ExpoNotificationService implements IExpoNotificationService {
         User user = userDeviceTokenRepository.findByDeviceToken(request.getDeviceToken()).getUser();
         Notification notification = Notification.builder()
                 .user(user)
-                .status(NotificationStatus.UNREAD)
                 .title(request.getTitle())
                 .message(request.getBody())
                 .build();

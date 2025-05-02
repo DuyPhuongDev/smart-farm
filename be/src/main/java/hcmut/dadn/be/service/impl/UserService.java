@@ -1,7 +1,7 @@
 package hcmut.dadn.be.service.impl;
 
 
-import hcmut.dadn.be.dto.UserDTO;
+import hcmut.dadn.be.dto.request.UserDTO;
 import hcmut.dadn.be.exception.DataNotFoundException;
 import hcmut.dadn.be.models.User;
 import hcmut.dadn.be.repository.UserRepository;
@@ -41,10 +41,15 @@ public class UserService implements IUserService {
         }
         //convert from userDTO => user
         User newUser = User.builder()
-                .fullName(userDTO.getFullName())
+                .firstName(userDTO.getFirstName())
+                .lastName(userDTO.getLastName())
                 .email(userDTO.getEmail())
                 .password(passwordEncoder.encode(userDTO.getPassword()))
+                .profilePicture("https://firebasestorage.googleapis.com/v0/b/test-cloudstore-db240.appspot.com/o/avt.png?alt=media&token=5f8b5978-7431-4918-976b-f6c534f32dc4")
                 .deviceTokens(new ArrayList<>())
+                .notifications(new ArrayList<>())
+                .gardens(new ArrayList<>())
+                .tasks(new ArrayList<>())
                 .build();
         return userRepository.save(newUser);
     }

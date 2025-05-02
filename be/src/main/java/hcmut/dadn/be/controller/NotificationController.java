@@ -1,6 +1,6 @@
 package hcmut.dadn.be.controller;
 
-import hcmut.dadn.be.dto.NotificationRequest;
+import hcmut.dadn.be.dto.request.NotificationRequest;
 import hcmut.dadn.be.service.impl.ExpoNotificationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

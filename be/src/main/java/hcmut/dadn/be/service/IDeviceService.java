@@ -1,20 +1,19 @@
 package hcmut.dadn.be.service;
 
-import hcmut.dadn.be.dto.DeviceDTO;
+import hcmut.dadn.be.dto.request.PumpDTO;
+import hcmut.dadn.be.dto.request.SensorDTO;
 import hcmut.dadn.be.exception.DataNotFoundException;
-import hcmut.dadn.be.models.Device;
-import hcmut.dadn.be.response.DeviceResponse;
+import hcmut.dadn.be.dto.response.DeviceResponse;
 import org.eclipse.paho.client.mqttv3.MqttException;
 
 import java.util.List;
 
 public interface IDeviceService {
-    DeviceResponse createDevice(DeviceDTO deviceDTO) throws MqttException;
+    DeviceResponse createSensor(SensorDTO dto) throws DataNotFoundException;
 
-    String findFeedByDeviceId(Long deviceId) throws DataNotFoundException;
+    DeviceResponse createPump(PumpDTO dto) throws DataNotFoundException;
 
-    DeviceResponse getDeviceById(Long deviceId) throws DataNotFoundException;
-
-    List<DeviceResponse> getAllDevices();
+    List<DeviceResponse> getSensorByCurrentUser() throws DataNotFoundException;
+    List<DeviceResponse> getPumpByCurrentUser(Long gardenId) throws DataNotFoundException;
 
 }

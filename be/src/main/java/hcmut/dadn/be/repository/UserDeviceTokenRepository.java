@@ -1,7 +1,7 @@
 package hcmut.dadn.be.repository;
 
 import hcmut.dadn.be.models.User;
-import hcmut.dadn.be.models.UserDeviceToken;
+import hcmut.dadn.be.models.notification.UserDeviceToken;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
