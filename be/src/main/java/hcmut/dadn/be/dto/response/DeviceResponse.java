@@ -35,7 +35,7 @@ public class DeviceResponse {
                 .unit(device.getUnit())
                 .feedName(device.getFeedName())
                 .groupName(device.getGarden().getGroupName())
-                .status(device.getPumpStatus().name())
+                .status(device.getPumpStatus()==null?null:device.getPumpStatus().name())
                 .build();
     }
 }

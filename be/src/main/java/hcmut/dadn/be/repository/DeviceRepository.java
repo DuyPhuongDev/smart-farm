@@ -9,5 +9,5 @@ import java.util.List;
 public interface DeviceRepository extends JpaRepository<Device, Long> {
     List<Device> findAllByDeviceTypeAndGardenId(DeviceType deviceType, Long gardenId);
 
-    List<Device> findAllByDeviceTypeIsNotContaining(DeviceType deviceType);
+    List<Device> findAllByDeviceTypeNot(DeviceType deviceType);
 }
