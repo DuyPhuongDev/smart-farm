@@ -1,8 +1,10 @@
 package hcmut.dadn.be.service.impl;
 
 
+import hcmut.dadn.be.dto.request.RefreshTokenDTO;
 import hcmut.dadn.be.dto.request.UserDTO;
 import hcmut.dadn.be.exception.DataNotFoundException;
+import hcmut.dadn.be.exception.InvalidParamException;
 import hcmut.dadn.be.models.User;
 import hcmut.dadn.be.repository.UserRepository;
 import hcmut.dadn.be.service.IUserService;
@@ -19,6 +21,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.Map;
 
 
 @Service
@@ -55,7 +58,7 @@ public class UserService implements IUserService {
     }
 
     @Override
-    public String login(String email, String password) throws DataNotFoundException {
+    public Map<String, String> login(String email, String password) throws DataNotFoundException {
         User existingUser = userRepository.findByEmail(email)
                 .orElseThrow(() -> new DataNotFoundException(
                         "User not found with username or email: " + email)
@@ -67,12 +70,42 @@ public class UserService implements IUserService {
                 email, password
         );
         authenticationManager.authenticate(authenticationToken);
-        return jwtTokenUtil.generateToken(existingUser);
+        return jwtTokenUtil.generateTokenPair(existingUser);
     }
 
     @Override
     public User getLoggedUser() throws DataNotFoundException {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         return userRepository.findByEmail(authentication.getName()).orElseThrow(() -> new DataNotFoundException("User not found with username: " + authentication.getName()));
+    }
+    
+    @Override
+    public Map<String, String> refreshToken(RefreshTokenDTO refreshTokenDTO) throws InvalidParamException {
+        String refreshToken = refreshTokenDTO.getRefreshToken();
+        
+        if (refreshToken == null || refreshToken.isEmpty()) {
+            throw new InvalidParamException("Refresh token is required");
+        }
+        
+        // Verify if it's a refresh token
+        if (!jwtTokenUtil.isRefreshToken(refreshToken)) {
+            throw new InvalidParamException("Invalid refresh token");
+        }
+        
+        try {
+            String username = jwtTokenUtil.extractUsername(refreshToken);
+            User user = userRepository.findByEmail(username)
+                    .orElseThrow(() -> new DataNotFoundException("User not found with email: " + username));
+            
+            if (!jwtTokenUtil.validateToken(refreshToken, user)) {
+                throw new InvalidParamException("Invalid refresh token");
+            }
+            
+            // Generate new token pair
+            return jwtTokenUtil.generateTokenPair(user);
+            
+        } catch (Exception e) {
+            throw new InvalidParamException("Invalid refresh token: " + e.getMessage());
+        }
     }
 }
