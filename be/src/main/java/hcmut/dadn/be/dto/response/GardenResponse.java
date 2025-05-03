@@ -39,6 +39,7 @@ public class GardenResponse {
                 .id(garden.getId())
                 .name(garden.getGardenName())
                 .cropName(garden.getCropName())
+                .location(garden.getLocation())
                 .cropStage(garden.getCropStage())
                 .thumbnail(garden.getThumbnail())
                 .groupName(garden.getGroupName())
