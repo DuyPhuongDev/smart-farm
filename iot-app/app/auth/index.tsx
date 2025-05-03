@@ -21,7 +21,7 @@ import { useTheme } from "@/contexts/ThemeContext";
 export default function AuthScreen() {
   const theme = useAppTheme();
   const { isDarkMode } = useTheme();
-  const [username, setUsername] = useState("");
+  const [email, setemail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -32,8 +32,8 @@ export default function AuthScreen() {
   const { signIn } = useGlobal();
 
   const handleSignIn = async () => {
-    if (!username || !password) {
-      setErrorMessage("Please enter both username and password");
+    if (!email || !password) {
+      setErrorMessage("Please enter both email and password");
       return;
     }
 
@@ -41,14 +41,11 @@ export default function AuthScreen() {
     setErrorMessage("");
 
     try {
-      // Simulate network request
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-
-      await signIn({ username, password });
+      await signIn({ email, password });
       // The navigation will be handled in the root layout
     } catch (error) {
       console.error("Sign in failed:", error);
-      setErrorMessage("Invalid username or password. Please try again.");
+      setErrorMessage("Invalid email or password. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -77,8 +74,8 @@ export default function AuthScreen() {
               <Text style={styles.errorText}>{errorMessage}</Text>
             ) : null}
 
-            {/* Username Input */}
-            <Text style={styles.label}>Username</Text>
+            {/* email Input */}
+            <Text style={styles.label}>email</Text>
             <View style={styles.inputContainer}>
               <Ionicons
                 name="person-outline"
@@ -88,13 +85,13 @@ export default function AuthScreen() {
               />
               <TextInput
                 style={styles.input}
-                placeholder="Enter your username"
+                placeholder="Enter your email"
                 placeholderTextColor={theme.inputPlaceholder}
-                value={username}
-                onChangeText={setUsername}
+                value={email}
+                onChangeText={setemail}
                 autoCapitalize="none"
                 keyboardType="default"
-                textContentType="username"
+                textContentType="emailAddress"
               />
             </View>
 

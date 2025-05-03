@@ -3,58 +3,58 @@ import { AUTH_ENDPOINTS, USER_ENDPOINTS } from "./endpoints";
 import { setItem, removeItem, getItem } from "@/utils/asyncStorage";
 import {
   AUTH_KEY,
-  type LoginData,
-  type LoginCredentials,
+  USER,
+  type AuthCredentials,
   type TokenResponse,
-  type UserData,
-} from "@/modules/auth/types/auth";
+  type LoginData,
+  type User,
+  ApiResponse,
+} from "@/types";
 
 /**
  * Authentication Service
  *
  * Handles all authentication-related API calls
  */
+
 class AuthService {
   /**
    * Login user
-   * @param username User username
+   * @param email User username
    * @param password User password
    * @returns Login response data
    */
-  async login(username: string, password: string): Promise<LoginData> {
+  async login(email: string, password: string): Promise<void> {
     try {
-      const credentials: LoginCredentials = { username, password };
+      const credentials: AuthCredentials = { email, password };
       const response = await apiClient.post<TokenResponse>(
         AUTH_ENDPOINTS.LOGIN,
         credentials
       );
-
+      const loginData: LoginData = response.data.data;
       // Get user info
-      let userData: UserData | undefined;
+      let userData: User | undefined;
       try {
-        const userResponse = await apiClient.get(USER_ENDPOINTS.ME, {
-          headers: {
-            Authorization: `Bearer ${response.data.access_token}`,
-          },
-        });
-        userData = userResponse.data;
+        const userResponse = await apiClient.get<ApiResponse<User>>(
+          USER_ENDPOINTS.ME,
+          {
+            headers: {
+              Authorization: `Bearer ${loginData.accessToken}`,
+            },
+          }
+        );
+        userData = userResponse.data.data;
       } catch (error) {
         console.error("Failed to get user data after login:", error);
       }
-
-      // Save auth data to storage
-      const authData: LoginData = {
-        access_token: response.data.access_token,
-        user: userData,
-      };
-
-      await setItem(AUTH_KEY, authData);
-      return authData;
+      // Save auth data to local storage
+      await setItem(AUTH_KEY, loginData);
+      // Save user data to local storage
+      await setItem(USER, userData);
     } catch (error) {
       throw error;
     }
   }
-
   /**
    * Register new user
    * @param userData User registration data
@@ -64,37 +64,26 @@ class AuthService {
     const response = await apiClient.post(AUTH_ENDPOINTS.REGISTER, userData);
     return response.data;
   }
-
   /**
    * Logout user
    * Calls logout endpoint and clears local storage
    */
   async logout() {
-    try {
-      // Call logout endpoint with token
-      await apiClient.post(AUTH_ENDPOINTS.LOGOUT);
-    } catch (error) {
-      // Ignore errors on logout
-      console.error("Logout error:", error);
-    } finally {
-      // Always remove auth data from storage
-      await removeItem(AUTH_KEY);
-    }
+    await removeItem(AUTH_KEY);
+    await removeItem(USER);
   }
-
   /**
    * Get current user info
    * @returns User data
    */
-  async getCurrentUser(): Promise<UserData | null> {
+  async getCurrentUser(): Promise<User | null> {
     try {
       const response = await apiClient.get(USER_ENDPOINTS.ME);
-      return response.data;
+      return response.data.data;
     } catch (error) {
       return null;
     }
   }
-
   /**
    * Check if user is authenticated
    * @returns Boolean indicating authentication status
@@ -102,8 +91,7 @@ class AuthService {
   async isAuthenticated(): Promise<boolean> {
     try {
       const authData = await this.getAuthData();
-      if (!authData?.access_token) return false;
-
+      if (!authData?.accessToken) return false;
       // Verify token by making a request to get user info
       const user = await this.getCurrentUser();
       return !!user;
@@ -111,7 +99,6 @@ class AuthService {
       return false;
     }
   }
-
   /**
    * Get current authentication data from storage
    * @returns Authentication data
@@ -122,32 +109,6 @@ class AuthService {
     } catch (error) {
       return null;
     }
-  }
-
-  /**
-   * Request password reset
-   * @param email User email
-   * @returns Response data
-   */
-  async forgotPassword(email: string) {
-    const response = await apiClient.post(AUTH_ENDPOINTS.FORGOT_PASSWORD, {
-      email,
-    });
-    return response.data;
-  }
-
-  /**
-   * Reset password with token
-   * @param token Reset token
-   * @param password New password
-   * @returns Response data
-   */
-  async resetPassword(token: string, password: string) {
-    const response = await apiClient.post(AUTH_ENDPOINTS.RESET_PASSWORD, {
-      token,
-      password,
-    });
-    return response.data;
   }
 }
 

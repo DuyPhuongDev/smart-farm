@@ -18,68 +18,14 @@ import {
   FontAwesome5,
 } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { GardenStatus, GardenType } from "@/constants/database";
-
-// --- Mock Data & Types (Aligned with Schema) ---
-// Interface matching Prisma Garden model fields relevant for list display
-interface GardenListItem {
-  id: number; // or string if your API uses string IDs
-  gardenKey: string;
-  name: string;
-  type: GardenType;
-  status: GardenStatus;
-  plantName?: string;
-  plantGrowStage?: string;
-  city?: string; // Example location field
-  district?: string;
-  thumbnail?: string; // Using thumbnail instead of 'image'
-  // Add other fields if needed for display, e.g., alert count
-  alertCount?: number;
-}
-
-// Updated Mock Generator
-const generateMockGardens = (count: number): GardenListItem[] => {
-  const gardens: GardenListItem[] = [];
-  const gardenTypes = Object.values(GardenType);
-  const gardenStatuses = Object.values(GardenStatus);
-  const plantNames = [
-    "Cà chua",
-    "Rau thơm",
-    "Rau hỗn hợp",
-    "Hoa hồng",
-    "Dâu tây",
-  ];
-  const cities = ["TP. HCM", "Hà Nội", "Đà Nẵng"];
-  const districts = ["Quận 1", "Thủ Đức", "Bình Thạnh", "Hai Bà Trưng"];
-  const images = [
-    "https://images.unsplash.com/photo-1591857177580-dc82b9ac4e1e",
-  ];
-
-  for (let i = 1; i <= count; i++) {
-    const type = gardenTypes[i % gardenTypes.length];
-    const status = gardenStatuses[i % gardenStatuses.length];
-    const plant = plantNames[i % plantNames.length];
-
-    gardens.push({
-      id: i,
-      gardenKey: `VUON_${String(i).padStart(4, "0")}`,
-      name: `Vườn ${i} - ${plant}`,
-      type: type,
-      status: status,
-      plantName: plant,
-      plantGrowStage: ["Ra hoa", "Đang lớn", "Nảy mầm", "Thu hoạch"][i % 4],
-      city: cities[i % cities.length],
-      district: districts[i % districts.length],
-      thumbnail: images[i % images.length],
-      alertCount: Math.random() > 0.7 ? Math.floor(Math.random() * 3) + 1 : 0, // ~30% chance of alerts
-    });
-  }
-  return gardens;
-};
+import type { Garden } from "@/types/api";
+import gardenService from "@/service/garden.service";
+import { CropStage, GardenType } from "@/constants/database";
+import { getStageLabel } from "@/utils/helper";
 
 export default function GardensScreen() {
   const theme = useAppTheme();
-  const [gardens, setGardens] = useState<GardenListItem[]>([]);
+  const [gardens, setGardens] = useState<Garden[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
 
@@ -87,8 +33,8 @@ export default function GardensScreen() {
 
   const fetchGardens = useCallback(async () => {
     setLoading(true);
-    await new Promise((resolve) => setTimeout(resolve, 800));
-    setGardens(generateMockGardens(3)); // Generate 3 mock gardens
+    const gardens = await gardenService.getgardens();
+    setGardens(gardens);
     setLoading(false);
   }, []);
 
@@ -103,15 +49,26 @@ export default function GardensScreen() {
   }, [fetchGardens]);
 
   // --- Helper Functions (Use new interface/enums) ---
-  const getStatusColor = (status: GardenStatus) => {
-    switch (status) {
-      case GardenStatus.ACTIVE:
-        return theme.success;
-      case GardenStatus.INACTIVE:
-        return theme.textTertiary;
-      // Add cases for other statuses if needed
+  const getStageColor = (stage: CropStage): string => {
+    switch (stage) {
+      case CropStage.Seed:
+        return theme.textTertiary; // xám nhạt, chưa phát triển
+      case CropStage.Germination:
+        return theme.primaryLight; // xanh lá sáng, bắt đầu nảy mầm
+      case CropStage.Vegetative:
+        return theme.primary; // xanh lá chính, đang phát triển
+      case CropStage.Budding:
+        return theme.secondary; // xanh dương, ra nụ
+      case CropStage.Flowering:
+        return theme.accent; // cam, ra hoa nổi bật
+      case CropStage.Fruiting:
+        return theme.plantHealthy; // xanh lá khỏe, ra quả
+      case CropStage.Maturity:
+        return theme.success; // xanh lá thành công, trưởng thành
+      case CropStage.Harvest:
+        return theme.warning; // vàng, sẵn sàng thu hoạch
       default:
-        return theme.warning; // Default for PENDING etc.
+        return theme.error; // đỏ, trạng thái không xác định
     }
   };
 
@@ -132,15 +89,26 @@ export default function GardensScreen() {
     }
   };
 
-  const getStatusText = (status: GardenStatus): string => {
-    switch (status) {
-      case GardenStatus.ACTIVE:
-        return "Hoạt động";
-      case GardenStatus.INACTIVE:
-        return "Ngừng";
-      // Add other statuses like PENDING if used
+  const getStageText = (stage: CropStage): string => {
+    switch (stage) {
+      case CropStage.Seed:
+        return "Hạt giống";
+      case CropStage.Germination:
+        return "Nảy mầm";
+      case CropStage.Vegetative:
+        return "Sinh trưởng";
+      case CropStage.Budding:
+        return "Ra nụ";
+      case CropStage.Flowering:
+        return "Ra hoa";
+      case CropStage.Fruiting:
+        return "Ra quả";
+      case CropStage.Maturity:
+        return "Trưởng thành";
+      case CropStage.Harvest:
+        return "Thu hoạch";
       default:
-        return status;
+        return "Không xác định";
     }
   };
 
@@ -163,7 +131,7 @@ export default function GardensScreen() {
 
   // --- Render Logic (Use fields from GardenListItem) ---
 
-  const renderGardenItem = ({ item }: { item: GardenListItem }) => {
+  const renderGardenItem = ({ item }: { item: Garden }) => {
     // console.log(item);
     return (
       <TouchableOpacity
@@ -172,7 +140,9 @@ export default function GardensScreen() {
       >
         <Image
           source={{
-            uri: "https://images.unsplash.com/photo-1591857177580-dc82b9ac4e1e",
+            uri:
+              item?.thumbnail ||
+              "https://images.unsplash.com/photo-1591857177580-dc82b9ac4e1e",
           }}
           style={styles.gardenThumbnail}
           resizeMode="cover"
@@ -181,11 +151,11 @@ export default function GardensScreen() {
         <View
           style={[
             styles.statusBadge,
-            { backgroundColor: getStatusColor(item.status) },
+            { backgroundColor: getStageColor(item.cropStage as CropStage) },
           ]}
         >
           <Text style={styles.statusBadgeText}>
-            {getStatusText(item.status)}
+            {getStageText(item.cropStage as CropStage)}
           </Text>
         </View>
         <View style={styles.gardenContent}>
@@ -195,12 +165,12 @@ export default function GardensScreen() {
           <View style={styles.gardenMetaRow}>
             <View style={styles.gardenMetaItem}>
               <Ionicons
-                name={getGardenTypeIcon(item.type) as any}
+                name={getGardenTypeIcon(item.gardenType) as any}
                 size={14}
                 color={theme.textSecondary}
               />
               <Text style={styles.gardenMetaText}>
-                {getGardenTypeText(item.type)}
+                {getGardenTypeText(item.gardenType)}
               </Text>
             </View>
             <View style={styles.gardenMetaItem}>
@@ -210,13 +180,13 @@ export default function GardensScreen() {
                 color={theme.textSecondary}
               />
               <Text style={styles.gardenMetaText}>
-                {item.district || item.city || "N/A"}
+                {item.location || "N/A"}
               </Text>
             </View>
           </View>
-          {(item.plantName || item.plantGrowStage) && (
+          {(item.cropName || item.cropStage) && (
             <Text style={styles.gardenPlantInfo} numberOfLines={1}>
-              {[item.plantName, item.plantGrowStage]
+              {[item.cropName, getStageLabel(item.cropStage as CropStage)]
                 .filter(Boolean)
                 .join(" • ")}
             </Text>

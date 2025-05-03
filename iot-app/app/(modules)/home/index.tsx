@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useCallback, useEffect } from "react";
 import {
   View,
   Text,
@@ -20,6 +20,9 @@ import {
   FontAwesome5,
 } from "@expo/vector-icons";
 import type { SensorData, Garden, SensorInfo, SensorStatus } from "@/types";
+import gardenService from "@/service/garden.service";
+import { getStageLabel } from "@/utils/helper";
+import { CropStage } from "@/constants/database";
 
 // Mocked data for development
 const GARDENS_DATA = [
@@ -143,10 +146,9 @@ export default function HomeScreen() {
   const theme = useAppTheme();
   const { user, mqttMessages } = useGlobal();
   const [refreshing, setRefreshing] = useState(false);
-  const [gardens, setGardens] = useState(GARDENS_DATA);
-  const [sensorInfo, setSensorInfo] = useState(SENSOR_INFO);
+  const [gardens, setGardens] = useState<Garden[]>([]);
+  const [sensorInfo, setSensorInfo] = useState<SensorInfo[]>([]);
   const [selectedGarden, setSelectedGarden] = useState<number | null>(1); // Default selected garden ID
-  console.log("MQTT Messages:", mqttMessages);
   const styles = useMemo(() => createStyles(theme), [theme]);
 
   // Format greeting based on time of day
@@ -157,15 +159,27 @@ export default function HomeScreen() {
     return "Good Evening";
   };
 
-  const onRefresh = React.useCallback(() => {
-    setRefreshing(true);
-    // Simulate data refresh
-    setTimeout(() => {
-      setGardens(GARDENS_DATA);
-      setSensorInfo(SENSOR_INFO);
-      setRefreshing(false);
-    }, 1500);
+  const fetchGardens = useCallback(async () => {
+    const gardens = await gardenService.getgardens();
+    setSelectedGarden(gardens[0]?.id || 1);
+    setGardens(gardens);
   }, []);
+  const fetchSensorInfo = useCallback(async () => {
+    const sensors = await gardenService.getSensors();
+    setSensorInfo(sensors);
+  }, []);
+
+  useEffect(() => {
+    fetchGardens();
+    fetchSensorInfo();
+  }, [fetchGardens, fetchSensorInfo]);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await fetchGardens();
+    await fetchSensorInfo();
+    setRefreshing(false);
+  }, [fetchGardens, fetchSensorInfo]);
 
   const filteredSensorInfo = selectedGarden
     ? sensorInfo.filter(
@@ -238,7 +252,7 @@ export default function HomeScreen() {
     const sensorMap: { [key: string]: (sensor: SensorData) => void } = {
       temperature: (s) => (temperatureData = s),
       humidity: (s) => (humidityData = s),
-      soilMoisture: (s) => (soilMoistureData = s),
+      moisture: (s) => (soilMoistureData = s),
       light: (s) => (lightData = s),
     };
 
@@ -252,10 +266,10 @@ export default function HomeScreen() {
     };
 
     item.sensors.forEach((sensor) => {
-      if (sensor.type === "pump") return;
+      if (sensor.type === "PUMP") return;
       const sensorId = sensor.id;
       const feedName = sensor.feedName;
-      sensorMap[sensor.type]?.({
+      sensorMap[sensor.type.toLowerCase()]?.({
         sensorId,
         value: getSensorValue(feedName),
         status: "normal",
@@ -296,8 +310,9 @@ export default function HomeScreen() {
           </Text>
 
           <Text style={[styles.gardenCrop, { color: theme.textSecondary }]}>
-            {item.cropName} • {item.cropStage}
+            {item.cropName} • {getStageLabel(item.cropStage as CropStage)}
           </Text>
+
           {Object.keys(item.sensors).length > 0 ? (
             <View style={styles.sensorPreviewContainer}>
               {temperatureData && (
@@ -368,7 +383,7 @@ export default function HomeScreen() {
 
           <View style={styles.gardenFooter}>
             <Text style={[styles.lastActivity, { color: theme.textTertiary }]}>
-              {item.lastActivity}
+              {item.lastActivity === "" ? "No activity" : item.lastActivity}
             </Text>
           </View>
         </View>

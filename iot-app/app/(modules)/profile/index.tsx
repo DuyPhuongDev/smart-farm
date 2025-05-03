@@ -186,31 +186,14 @@ export default function ProfileScreen() {
           <Text style={styles.profileName}>
             {user ? `${user.firstName} ${user.lastName}` : "Garden Enthusiast"}
           </Text>
-          <Text style={styles.profileRole}>{user?.roleName || "GARDENER"}</Text>
-
-          {user?.gardener && (
-            <View style={styles.experienceContainer}>
-              <View style={styles.experienceBar}>
-                <View
-                  style={[
-                    styles.experienceFill,
-                    { width: `${progressToNextLevel()}%` },
-                  ]}
-                />
-              </View>
-              <Text style={styles.experienceText}>
-                {user.gardener.experienceLevel?.title || "Novice Gardener"} •{" "}
-                {user.gardener.experiencePoints} XP
-              </Text>
-            </View>
-          )}
+          <Text style={styles.profileRole}>GARDENER</Text>
         </View>
 
         <View
           style={[styles.detailsContainer, { backgroundColor: appTheme.card }]}
         >
           <Text style={[styles.sectionTitle, { color: appTheme.text }]}>
-            Personal Information
+            Thông tin cá nhân
           </Text>
 
           <View style={styles.infoRow}>
@@ -310,7 +293,7 @@ export default function ProfileScreen() {
           style={[styles.statsContainer, { backgroundColor: appTheme.card }]}
         >
           <Text style={[styles.sectionTitle, { color: appTheme.text }]}>
-            Gardener Statistics
+            Thống kê
           </Text>
 
           <View style={styles.statsRow}>
@@ -328,7 +311,7 @@ export default function ProfileScreen() {
                 />
               </View>
               <Text style={[styles.statValue, { color: appTheme.text }]}>
-                {user?.gardener?.gardens?.length ?? 0}
+                {user?.gardens?.length ?? 0}
               </Text>
               <Text
                 style={[styles.statLabel, { color: appTheme.textSecondary }]}
@@ -345,18 +328,18 @@ export default function ProfileScreen() {
                 ]}
               >
                 <MaterialCommunityIcons
-                  name="sprout"
+                  name="access-point"
                   size={24}
                   color={appTheme.primary}
                 />
               </View>
               <Text style={[styles.statValue, { color: appTheme.text }]}>
-                {user?.gardener?.plants?.length ?? 0}
+                {user?.gardens?.length ?? 0}
               </Text>
               <Text
                 style={[styles.statLabel, { color: appTheme.textSecondary }]}
               >
-                Plants
+                Sensors
               </Text>
             </View>
 
@@ -374,7 +357,7 @@ export default function ProfileScreen() {
                 />
               </View>
               <Text style={[styles.statValue, { color: appTheme.text }]}>
-                {user?.gardener?.completedTasks ?? 0}
+                {user?.gardens?.length ?? 0}
               </Text>
               <Text
                 style={[styles.statLabel, { color: appTheme.textSecondary }]}

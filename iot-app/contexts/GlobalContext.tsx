@@ -8,7 +8,6 @@ import React, {
 import { getItem, setItem, removeItem } from "@/utils/asyncStorage";
 import { connect, MqttClient } from "@taoqf/react-native-mqtt";
 import env from "@/config/environment";
-import apiClient from "@/service/apiClient"; // Import apiClient
 const { adafruitUsername, adafruitKey, mqttBroker } = env;
 import {
   User,
@@ -18,6 +17,7 @@ import {
   USER,
   AUTH_KEY,
 } from "@/types";
+import { authService } from "@/service";
 
 // ===== Context Creation =====
 export type GlobalContextType = {
@@ -31,8 +31,8 @@ export type GlobalContextType = {
   subscribe: (groupName: string, feedName: string) => void;
   unsubscribe: (groupName: string, feedName: string) => void;
   mqttMessages: Record<string, string>;
-  devices: SensorInfo[];
-  fetchDevices: () => Promise<void>;
+  // devices: SensorInfo[];
+  // fetchDevices: () => Promise<void>;
   subscribeToGarden: (gardenId: number) => void;
 };
 
@@ -47,84 +47,84 @@ export function GlobalProvider({ children }: { children: React.ReactNode }) {
   const mqttClientRef = useRef<MqttClient | null>(null);
   const mqttConnectionStateRef = useRef<MQTTConnectionState>("disconnected");
   const [mqttMessages, setMqttMessages] = useState<Record<string, string>>({});
-  const [devices, setDevices] = useState<SensorInfo[]>([]);
+  // const [devices, setDevices] = useState<SensorInfo[]>([]);
   const subscribedTopics = useRef<Set<string>>(new Set());
 
   // Fetch devices from API using apiClient
-  const fetchDevices = async () => {
-    try {
-      // const response = await apiClient.get("/devices");
-      // if (response.data.status_code === 200) {
-      //   const deviceData: SensorInfo[] = response.data.data;
-      //   setDevices(deviceData);
-      //   console.log("Fetched devices:", deviceData);
-      // }
-      // har      // Mock data for testing
-      const mockData: SensorInfo[] = [
-        {
-          id: 1,
-          gardenId: 1,
-          gardenName: "Vườn cà chua",
-          type: "temperature",
-          icon: "thermometer",
-          unit: "°C",
-          feedName: "temperature",
-          groupName: "garden1",
-        },
-        {
-          id: 2,
-          gardenId: 1,
-          gardenName: "Vườn cà chua",
-          type: "humidity",
-          icon: "water-percent",
-          unit: "%",
-          feedName: "humidity",
-          groupName: "garden1",
-        },
-        {
-          id: 3,
-          gardenId: 1,
-          gardenName: "Vườn cà chua",
-          type: "soilMoisture",
-          icon: "water",
-          unit: "%",
-          feedName: "moisture",
-          groupName: "garden1",
-        },
-        {
-          id: 4,
-          gardenId: 1,
-          gardenName: "Vườn cà chua",
-          type: "light",
-          icon: "white-balance-sunny",
-          unit: "lux",
-          feedName: "light",
-          groupName: "garden1",
-        },
-        {
-          id: 5,
-          gardenId: 1,
-          gardenName: "Vườn cà chua",
-          type: "pump",
-          icon: "water-pump",
-          feedName: "pump1",
-          groupName: "garden1",
-        },
-        {
-          id: 6,
-          gardenId: 1,
-          gardenName: "Vườn cà chua",
-          type: "pump",
-          icon: "water-pump",
-          feedName: "pump2",
-          groupName: "garden1",
-        },
-      ];
-      setDevices(mockData);
-    } catch (error) {
-      console.error("Failed to fetch devices:", error);
-    }
-  };
+  // const fetchDevices = async () => {
+  //   try {
+  //     // const response = await apiClient.get("/devices");
+  //     // if (response.data.status_code === 200) {
+  //     //   const deviceData: SensorInfo[] = response.data.data;
+  //     //   setDevices(deviceData);
+  //     //   console.log("Fetched devices:", deviceData);
+  //     // }
+  //     // har      // Mock data for testing
+  //     const mockData: SensorInfo[] = [
+  //       {
+  //         id: 1,
+  //         gardenId: 1,
+  //         gardenName: "Vườn cà chua",
+  //         type: "temperature",
+  //         icon: "thermometer",
+  //         unit: "°C",
+  //         feedName: "temperature",
+  //         groupName: "garden1",
+  //       },
+  //       {
+  //         id: 2,
+  //         gardenId: 1,
+  //         gardenName: "Vườn cà chua",
+  //         type: "humidity",
+  //         icon: "water-percent",
+  //         unit: "%",
+  //         feedName: "humidity",
+  //         groupName: "garden1",
+  //       },
+  //       {
+  //         id: 3,
+  //         gardenId: 1,
+  //         gardenName: "Vườn cà chua",
+  //         type: "soilMoisture",
+  //         icon: "water",
+  //         unit: "%",
+  //         feedName: "moisture",
+  //         groupName: "garden1",
+  //       },
+  //       {
+  //         id: 4,
+  //         gardenId: 1,
+  //         gardenName: "Vườn cà chua",
+  //         type: "light",
+  //         icon: "white-balance-sunny",
+  //         unit: "lux",
+  //         feedName: "light",
+  //         groupName: "garden1",
+  //       },
+  //       {
+  //         id: 5,
+  //         gardenId: 1,
+  //         gardenName: "Vườn cà chua",
+  //         type: "pump",
+  //         icon: "water-pump",
+  //         feedName: "pump1",
+  //         groupName: "garden1",
+  //       },
+  //       {
+  //         id: 6,
+  //         gardenId: 1,
+  //         gardenName: "Vườn cà chua",
+  //         type: "pump",
+  //         icon: "water-pump",
+  //         feedName: "pump2",
+  //         groupName: "garden1",
+  //       },
+  //     ];
+  //     setDevices(mockData);
+  //   } catch (error) {
+  //     console.error("Failed to fetch devices:", error);
+  //   }
+  // };
 
   // Subscribe to all feeds in a garden
   const subscribeToGarden = (gardenId: number) => {
@@ -305,7 +305,7 @@ export function GlobalProvider({ children }: { children: React.ReactNode }) {
         const userData = await getItem<User>(USER);
         if (userData) {
           setUser(userData);
-          await fetchDevices();
+          // await fetchDevices();
           connectToMQTT(adafruitUsername, adafruitKey, userData.gardens);
         }
       } catch (error) {
@@ -331,71 +331,21 @@ export function GlobalProvider({ children }: { children: React.ReactNode }) {
 
   // User Authentication Functions
   const signIn = async (credentials: AuthCredentials): Promise<void> => {
-    // try {
-    //   // Thay thế mock login bằng API thực tế
-    //   const response = await apiClient.post(AUTH_ENDPOINTS.LOGIN, credentials);
-    //   const { access_token, user: userData } = response.data;
-    //   // Lưu token và user data
-    //   await setItem(AUTH_KEY, { access_token });
-    //   await setItem("@user", userData);
-    //   setUser(userData);
-    //   await fetchDevices();
-    //   connectToMQTT(adafruitUsername, adafruitKey, userData.gardens);
-    // } catch (error) {
-    //   console.error("Sign in error:", error);
-    //   throw error;
-    // }
-
-    try {
-      // In a real app, this would be an API call to your backend
-      // Mock login check updated to use username
-      if (
-        credentials.username === "test" && // Changed from email to username
-        credentials.password === "123"
-      ) {
-        const userData: User = {
-          id: "1",
-          firstName: "Duy",
-          lastName: "Phuong",
-          email: "gardener@test.com", // Keep email in user data for now
-          profilePicture: "https://i.pravatar.cc/150?img=11",
-          roleId: 2, // Gardener role ID
-          roleName: "GARDENER",
-          gardener: {
-            experiencePoints: 750,
-            experienceLevelId: 2,
-            experienceLevel: {
-              level: 2,
-              title: "Garden Enthusiast",
-              icon: "🌿",
-            },
-          },
-          gardens: [
-            {
-              id: 1,
-              groupName: "garden1",
-            },
-          ],
-        };
-
-        await setItem(USER, userData);
-        setUser(userData);
-      } else {
-        throw new Error("Invalid credentials");
-      }
-    } catch (error) {
-      console.error("Sign in error:", error);
-      throw error;
+    await authService.login(credentials.email, credentials.password);
+    const userData = await getItem<User>(USER);
+    if (userData) {
+      setUser(userData);
+      // await fetchDevices();
+      //connectToMQTT(adafruitUsername, adafruitKey, userData.gardens);
     }
   };
 
   const signOut = async (): Promise<void> => {
     try {
       disconnectFromMQTT();
-      await removeItem(USER);
-      await removeItem(AUTH_KEY);
+      await authService.logout();
       setUser(null);
-      setDevices([]);
+      // setDevices([]);
     } catch (error) {
       console.error("Sign out error:", error);
       throw error;
@@ -414,8 +364,8 @@ export function GlobalProvider({ children }: { children: React.ReactNode }) {
     subscribe,
     unsubscribe,
     mqttMessages,
-    devices,
-    fetchDevices,
+    // devices,
+    // fetchDevices,
     subscribeToGarden,
   };
 
