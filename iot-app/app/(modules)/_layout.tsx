@@ -169,6 +169,13 @@ export default function ModuleLayout() {
             headerTitle: "Công việc vườn",
           }}
         />
+        <Tabs.Screen
+          name="tasks/new"
+          options={{
+            href: null,
+            headerTitle: "Thêm công việc mới",
+          }}
+        />
 
         {/* 5. Profile Tab - User profile and settings */}
         <Tabs.Screen

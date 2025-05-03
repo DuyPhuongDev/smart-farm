@@ -7,24 +7,18 @@ import {
   ActivityIndicator,
   RefreshControl,
   Switch,
+  TouchableOpacity,
+  ScrollView,
 } from "react-native";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAppTheme } from "@/hooks/useAppTheme";
 import { useGlobal } from "@/contexts/GlobalContext";
-import { PumpStatus } from "@/constants/database";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import type { SensorData, SensorInfo } from "@/types";
+import { PumpData, SensorInfo, PumpStatus, PumpValue } from "@/types";
+import { updatePumpStatus } from "@/service";
 
-// Define types for pump data
-interface PumpInfo extends SensorInfo {
-  status: PumpStatus;
-  name: string;
-  lastActivated?: string;
-  isAutomatic: boolean;
-}
-
-const PUMP_DATA = [
+const PUMP_INFO = [
   {
     id: 1,
     name: "Máy bơm 1",
@@ -32,54 +26,47 @@ const PUMP_DATA = [
     gardenName: "Vườn cà chua",
     type: "pump",
     icon: "water-pump",
-    status: PumpStatus.ON,
-    lastActivated: "2025-04-29T12:00:00Z",
-    isAutomatic: true,
     groupName: "garden1",
     feedName: "pump1",
+    status: PumpStatus.MANUAL,
   },
   {
     id: 2,
     name: "Máy bơm 2",
-    status: PumpStatus.OFF,
     gardenId: 1,
     gardenName: "Vườn cà chua",
     type: "pump",
     icon: "water-pump",
-    lastActivated: "2023-10-02T14:00:00Z",
-    isAutomatic: false,
     groupName: "garden1",
     feedName: "pump2",
+    status: PumpStatus.AUTOMATIC,
   },
   {
     id: 3,
     name: "Máy bơm 3",
-    status: PumpStatus.MAINTENANCE,
     gardenId: 1,
     gardenName: "Vườn cà chua",
     type: "pump",
     icon: "water-pump",
-    lastActivated: "2023-10-02T14:00:00Z",
-    isAutomatic: false,
-    groupName: "garden1",
+    groupName: "garden3",
     feedName: "pump2",
+    status: PumpStatus.MAINTENANCE,
   },
   {
     id: 4,
     name: "Máy bơm 4",
-    status: PumpStatus.ERROR,
     gardenId: 1,
     gardenName: "Vườn cà chua",
     type: "pump",
     icon: "water-pump",
-    lastActivated: "2023-10-02T14:00:00Z",
-    isAutomatic: false,
     groupName: "garden1",
-    feedName: "pump2",
+    feedName: "pump4",
+    status: PumpStatus.ERROR,
   },
 ];
-const generateMockPumps = (gardenId: number): PumpInfo[] => {
-  return PUMP_DATA.filter((pump) => pump.gardenId === gardenId);
+
+const generateMockPumps = (gardenId: number): SensorInfo[] => {
+  return PUMP_INFO.filter((pump) => pump.gardenId === gardenId);
 };
 
 export default function PumpActionScreen() {
@@ -89,9 +76,12 @@ export default function PumpActionScreen() {
   const { id: gardenId } = useLocalSearchParams<{ id: string }>(); // Get gardenId from route '[id]'
   const styles = useMemo(() => createStyles(theme), [theme]);
 
-  const [pumps, setPumps] = useState<PumpInfo[]>([]);
+  const [pumps, setPumps] = useState<SensorInfo[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [pumpValuesMap, setPumpValuesMap] = useState<Record<number, PumpData>>(
+    {}
+  );
 
   // Load pump data
   const loadPumps = useCallback(async () => {
@@ -119,33 +109,102 @@ export default function PumpActionScreen() {
     setRefreshing(false);
   }, [loadPumps]);
 
-  // Handle pump status toggle
-  const handleTogglePump = useCallback(
-    (pump: PumpInfo, newStatus: boolean) => {
-      // Update pump status through MQTT
-      const status = newStatus ? PumpStatus.ON : PumpStatus.OFF;
-      publish(pump.groupName, pump.feedName, status);
-      console.log(`Toggled pump ${pump.id} to ${status}`);
+  // Update pump values from MQTT when messages change
+  useEffect(() => {
+    // Process MQTT messages to update pump values
+    const updatedPumpValues = { ...pumpValuesMap };
+    let hasUpdates = false;
 
-      // Update local state for immediate UI feedback
-      setPumps((currentPumps) =>
-        currentPumps.map((p) =>
-          p.id === pump.id ? { ...p, status: status } : p
-        )
-      );
+    pumps.forEach((pump) => {
+      const feedKey = `${pump.groupName}.${pump.feedName}`;
+      const mqttValue = mqttMessages[feedKey];
+
+      if (mqttValue) {
+        // Only update if value has changed
+        if (
+          !updatedPumpValues[pump.id] ||
+          updatedPumpValues[pump.id].value !== mqttValue
+        ) {
+          hasUpdates = true;
+          updatedPumpValues[pump.id] = {
+            sensorId: pump.id,
+            value: mqttValue as PumpValue,
+            lastActivated: new Date().toISOString(), // Only update timestamp when value changes
+          };
+        }
+      }
+    });
+
+    if (hasUpdates) {
+      setPumpValuesMap(updatedPumpValues);
+    }
+  }, [mqttMessages, pumps]);
+
+  // Handle pump status toggle - only MQTT, no API calls
+  const handleTogglePump = useCallback(
+    (pump: SensorInfo, newStatus: boolean) => {
+      // Update pump status through MQTT
+      const value = newStatus ? PumpValue.ON : PumpValue.OFF;
+      publish(pump.groupName, pump.feedName, value);
+      console.log(`Toggled pump ${pump.id} to ${value}`);
+
+      // UI will update automatically when MQTT message is received back
     },
     [publish]
   );
 
-  // Render a single pump card
-  const renderPumpCard = ({ item }: { item: PumpInfo }) => {
-    // Get real-time status from MQTT if available
-    const feedKey = `${item.groupName}.${item.feedName}`;
-    const mqttStatus = mqttMessages[feedKey];
+  const handleStatusChange = useCallback(
+    async (pump: SensorInfo, newStatus: PumpStatus) => {
+      if (pump.status === newStatus) {
+        // Don't make unnecessary API calls if status hasn't changed
+        return;
+      }
 
-    // If we have MQTT status, use it, otherwise use the local state
-    const currentStatus = mqttStatus || item.status;
-    const isOn = currentStatus === PumpStatus.ON;
+      try {
+        // Call API to update pump status
+        const response = await updatePumpStatus(pump.id, newStatus);
+        if (response.success) {
+          // Only update status in local state, not affecting value or lastActivated
+          setPumps((currentPumps) =>
+            currentPumps.map((p) =>
+              p.id === pump.id ? { ...p, status: newStatus } : p
+            )
+          );
+          console.log(`Changed pump ${pump.id} mode to ${newStatus}`);
+        }
+      } catch (error) {
+        console.error("Failed to change pump status:", error);
+      }
+    },
+    [publish]
+  );
+
+  const getPumpStatusColor = (status: PumpStatus) => {
+    switch (status) {
+      case PumpStatus.MANUAL:
+        return theme.primary;
+      case PumpStatus.AUTOMATIC:
+        return theme.success;
+      case PumpStatus.MAINTENANCE:
+        return theme.warning;
+      case PumpStatus.ERROR:
+        return theme.error;
+      default:
+        return theme.textSecondary;
+    }
+  };
+
+  // Render a single pump card
+  const renderPumpCard = ({ item }: { item: SensorInfo }) => {
+    // Get real-time pump value data, either from our state map or create default
+    const pumpValueData = pumpValuesMap[item.id] || {
+      sensorId: item.id,
+      value: PumpValue.OFF, // Default to OFF
+      lastActivated: new Date().toISOString(), // Default timestamp
+    };
+
+    const isOn = pumpValueData.value === PumpValue.ON;
+    const isManualMode = item.status === PumpStatus.MANUAL;
 
     return (
       <View style={[styles.pumpCard, { backgroundColor: theme.card }]}>
@@ -158,6 +217,22 @@ export default function PumpActionScreen() {
           <Text style={[styles.pumpName, { color: theme.text }]}>
             {item.name}
           </Text>
+
+          {/* Status Badge */}
+          <View
+            style={[
+              styles.statusBadge,
+              {
+                backgroundColor: getPumpStatusColor(
+                  item.status || PumpStatus.MANUAL
+                ),
+              },
+            ]}
+          >
+            <Text style={styles.statusBadgeText}>
+              {item.status || PumpStatus.MANUAL}
+            </Text>
+          </View>
         </View>
 
         <View style={styles.pumpDetails}>
@@ -169,69 +244,231 @@ export default function PumpActionScreen() {
               ]}
             />
             <Text style={[styles.statusText, { color: theme.textSecondary }]}>
-              {isOn ? "Đang hoạt động" : "Đã tắt"}
+              {pumpValueData.value === PumpValue.ON
+                ? "Đang hoạt động"
+                : "Đã tắt"}
             </Text>
           </View>
 
-          {item.lastActivated && (
-            <Text
-              style={[styles.lastActivatedText, { color: theme.textTertiary }]}
-            >
-              Kích hoạt lần cuối:{" "}
-              {new Date(item.lastActivated).toLocaleString("vi-VN")}
-            </Text>
-          )}
+          <Text
+            style={[styles.lastActivatedText, { color: theme.textTertiary }]}
+          >
+            Kích hoạt lần cuối:{" "}
+            {new Date(pumpValueData.lastActivated).toLocaleString("vi-VN")}
+          </Text>
         </View>
 
+        {/* Manual mode toggle - only enabled in MANUAL mode */}
         <View style={styles.controlContainer}>
-          <Text style={[styles.controlLabel, { color: theme.textSecondary }]}>
-            {isOn ? "Tắt máy bơm" : "Bật máy bơm"}
+          <Text
+            style={[
+              styles.controlLabel,
+              {
+                color: isManualMode ? theme.textSecondary : theme.textTertiary,
+              },
+            ]}
+          >
+            {pumpValueData.value === PumpValue.ON
+              ? "Tắt máy bơm"
+              : "Bật máy bơm"}
           </Text>
           <Switch
-            value={isOn}
-            onValueChange={(value) => handleTogglePump(item, value)}
-            trackColor={{
-              false: theme.borderLight,
-              true: `${theme.success}80`,
+            value={pumpValueData.value === PumpValue.ON}
+            onValueChange={(value) => {
+              if (isManualMode) {
+                handleTogglePump(item, value);
+              } else {
+                // Show disabled feedback - could add a toast here
+                console.log("Pump can only be toggled in MANUAL mode");
+              }
             }}
-            thumbColor={isOn ? theme.success : theme.border}
+            disabled={!isManualMode}
+            trackColor={{
+              false: isManualMode ? theme.borderLight : theme.tabBackground,
+              true: isManualMode
+                ? `${theme.success}80`
+                : theme.disabledBackground,
+            }}
+            thumbColor={
+              isManualMode
+                ? pumpValueData.value === PumpValue.ON
+                  ? theme.success
+                  : theme.border
+                : theme.disabledForeground
+            }
           />
         </View>
 
+        {/* Status mode selector */}
         <View
           style={[
-            styles.automaticContainer,
+            styles.statusSelectorContainer,
             { borderTopColor: theme.borderLight },
           ]}
         >
-          <View style={styles.automaticTextContainer}>
-            <MaterialCommunityIcons
-              name="clock-outline"
-              size={18}
-              color={theme.textSecondary}
-            />
-            <Text
-              style={[styles.automaticText, { color: theme.textSecondary }]}
-            >
-              Chế độ tự động
-            </Text>
-          </View>
-          <Switch
-            value={item.isAutomatic}
-            onValueChange={() => {
-              // Toggle automatic mode
-              setPumps((currentPumps) =>
-                currentPumps.map((p) =>
-                  p.id === item.id ? { ...p, isAutomatic: !p.isAutomatic } : p
-                )
-              );
-            }}
-            trackColor={{
-              false: theme.borderLight,
-              true: `${theme.primary}80`,
-            }}
-            thumbColor={item.isAutomatic ? theme.primary : theme.border}
-          />
+          <Text
+            style={[styles.statusSelectorLabel, { color: theme.textSecondary }]}
+          >
+            Chế độ hoạt động
+          </Text>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.statusButtonsScrollContent}
+          >
+            <View style={styles.statusButtonsContainer}>
+              <TouchableOpacity
+                style={[
+                  styles.statusButton,
+                  item.status === PumpStatus.MANUAL &&
+                    styles.activeStatusButton,
+                  {
+                    borderColor:
+                      item.status === PumpStatus.MANUAL
+                        ? theme.primary
+                        : theme.borderLight,
+                  },
+                ]}
+                onPress={() => handleStatusChange(item, PumpStatus.MANUAL)}
+              >
+                <MaterialCommunityIcons
+                  name="hand-back-right"
+                  size={16}
+                  color={
+                    item.status === PumpStatus.MANUAL
+                      ? theme.primary
+                      : theme.textSecondary
+                  }
+                />
+                <Text
+                  style={[
+                    styles.statusButtonText,
+                    {
+                      color:
+                        item.status === PumpStatus.MANUAL
+                          ? theme.primary
+                          : theme.textSecondary,
+                    },
+                  ]}
+                >
+                  THỦ CÔNG
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  styles.statusButton,
+                  item.status === PumpStatus.AUTOMATIC &&
+                    styles.activeStatusButton,
+                  {
+                    borderColor:
+                      item.status === PumpStatus.AUTOMATIC
+                        ? theme.primary
+                        : theme.borderLight,
+                  },
+                ]}
+                onPress={() => handleStatusChange(item, PumpStatus.AUTOMATIC)}
+              >
+                <MaterialCommunityIcons
+                  name="robot"
+                  size={16}
+                  color={
+                    item.status === PumpStatus.AUTOMATIC
+                      ? theme.primary
+                      : theme.textSecondary
+                  }
+                />
+                <Text
+                  style={[
+                    styles.statusButtonText,
+                    {
+                      color:
+                        item.status === PumpStatus.AUTOMATIC
+                          ? theme.primary
+                          : theme.textSecondary,
+                    },
+                  ]}
+                >
+                  TỰ ĐỘNG
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  styles.statusButton,
+                  item.status === PumpStatus.MAINTENANCE &&
+                    styles.activeStatusButton,
+                  {
+                    borderColor:
+                      item.status === PumpStatus.MAINTENANCE
+                        ? theme.warning
+                        : theme.borderLight,
+                  },
+                ]}
+                onPress={() => handleStatusChange(item, PumpStatus.MAINTENANCE)}
+              >
+                <MaterialCommunityIcons
+                  name="tools"
+                  size={16}
+                  color={
+                    item.status === PumpStatus.MAINTENANCE
+                      ? theme.warning
+                      : theme.textSecondary
+                  }
+                />
+                <Text
+                  style={[
+                    styles.statusButtonText,
+                    {
+                      color:
+                        item.status === PumpStatus.MAINTENANCE
+                          ? theme.warning
+                          : theme.textSecondary,
+                    },
+                  ]}
+                >
+                  BẢO TRÌ
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  styles.statusButton,
+                  item.status === PumpStatus.ERROR && styles.activeStatusButton,
+                  {
+                    borderColor:
+                      item.status === PumpStatus.ERROR
+                        ? theme.error
+                        : theme.borderLight,
+                  },
+                ]}
+                onPress={() => handleStatusChange(item, PumpStatus.ERROR)}
+              >
+                <MaterialCommunityIcons
+                  name="alert-circle"
+                  size={16}
+                  color={
+                    item.status === PumpStatus.ERROR
+                      ? theme.error
+                      : theme.textSecondary
+                  }
+                />
+                <Text
+                  style={[
+                    styles.statusButtonText,
+                    {
+                      color:
+                        item.status === PumpStatus.ERROR
+                          ? theme.error
+                          : theme.textSecondary,
+                    },
+                  ]}
+                >
+                  LỖI
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </ScrollView>
         </View>
       </View>
     );
@@ -252,7 +489,23 @@ export default function PumpActionScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={["bottom"]}>
-      <Stack.Screen options={{ title: `Máy bơm - Vườn ${gardenId}` }} />
+      <Stack.Screen
+        options={{
+          title: `Máy bơm - Vườn ${gardenId}`,
+          headerLeft: () => (
+            <TouchableOpacity
+              onPress={() => router.push("/(modules)/home")}
+              style={styles.headerButton}
+            >
+              <MaterialCommunityIcons
+                name="home"
+                size={24}
+                color={theme.text}
+              />
+            </TouchableOpacity>
+          ),
+        }}
+      />
 
       {isLoading ? (
         <View style={styles.loadingContainer}>
@@ -298,11 +551,11 @@ const createStyles = (theme: any) =>
     },
     listContentContainer: {
       padding: 16,
-      paddingBottom: 80, // Add padding for FAB
+      paddingBottom: 80,
     },
     pumpCard: {
       marginBottom: 16,
-      borderRadius: 8,
+      borderRadius: 12,
       padding: 16,
       elevation: 2,
       shadowColor: "#000",
@@ -313,12 +566,23 @@ const createStyles = (theme: any) =>
     pumpHeader: {
       flexDirection: "row",
       alignItems: "center",
-      marginBottom: 8,
+      marginBottom: 12,
     },
     pumpName: {
       fontSize: 18,
       fontFamily: "Inter-SemiBold",
       marginLeft: 8,
+      flex: 1,
+    },
+    statusBadge: {
+      paddingHorizontal: 8,
+      paddingVertical: 4,
+      borderRadius: 8,
+    },
+    statusBadgeText: {
+      fontSize: 12,
+      fontFamily: "Inter-Medium",
+      color: "#fff",
     },
     pumpDetails: {
       marginBottom: 16,
@@ -329,9 +593,9 @@ const createStyles = (theme: any) =>
       marginBottom: 8,
     },
     statusIndicator: {
-      width: 12,
-      height: 12,
-      borderRadius: 6,
+      width: 10,
+      height: 10,
+      borderRadius: 5,
       marginRight: 8,
     },
     statusText: {
@@ -346,25 +610,45 @@ const createStyles = (theme: any) =>
       flexDirection: "row",
       justifyContent: "space-between",
       alignItems: "center",
-      marginBottom: 16,
+      marginTop: 12,
+      paddingTop: 12,
+      borderTopWidth: 1,
+      borderTopColor: theme.borderLight,
     },
     controlLabel: {
       fontSize: 14,
       fontFamily: "Inter-Medium",
     },
-    automaticContainer: {
-      flexDirection: "row",
-      justifyContent: "space-between",
-      alignItems: "center",
+    statusSelectorContainer: {
+      marginTop: 12,
+      paddingTop: 12,
       borderTopWidth: 1,
-      paddingTop: 8,
     },
-    automaticTextContainer: {
+    statusSelectorLabel: {
+      fontSize: 14,
+      fontFamily: "Inter-Medium",
+    },
+    statusButtonsScrollContent: {
+      flexDirection: "row",
+    },
+    statusButtonsContainer: {
+      flexDirection: "row",
+      marginTop: 8,
+    },
+    statusButton: {
       flexDirection: "row",
       alignItems: "center",
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+      borderWidth: 1,
+      borderRadius: 8,
+      marginRight: 8,
     },
-    automaticText: {
-      fontSize: 14,
+    activeStatusButton: {
+      backgroundColor: "#f0f0f0",
+    },
+    statusButtonText: {
+      fontSize: 12,
       fontFamily: "Inter-Medium",
       marginLeft: 4,
     },
@@ -372,7 +656,7 @@ const createStyles = (theme: any) =>
       flex: 1,
       justifyContent: "center",
       alignItems: "center",
-      marginTop: 50, // Adjust as needed
+      marginTop: 50,
       paddingHorizontal: 30,
     },
     emptyText: {
@@ -381,5 +665,8 @@ const createStyles = (theme: any) =>
       color: theme.textSecondary,
       marginTop: 16,
       textAlign: "center",
+    },
+    headerButton: {
+      marginLeft: 16,
     },
   });

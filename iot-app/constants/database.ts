@@ -9,6 +9,17 @@ export enum GardenType {
   WINDOW_SILL = "WINDOW_SILL",
 }
 
+export enum CropStage {
+  Seed = "Seed", // Hạt giống
+  Germination = "Germination", // Nảy mầm
+  Vegetative = "Vegetative", // Sinh trưởng
+  Budding = "Budding", // Ra nụ
+  Flowering = "Flowering", // Ra hoa
+  Fruiting = "Fruiting", // Ra quả
+  Maturity = "Maturity", // Trưởng thành
+  Harvest = "Harvest", // Thu hoạch
+}
+
 // Garden status enum
 export enum GardenStatus {
   ACTIVE = "ACTIVE",
@@ -83,12 +94,4 @@ export enum NotificationMethod {
   EMAIL = "EMAIL",
   SMS = "SMS",
   IN_APP = "IN_APP",
-}
-
-// pump status enum
-export enum PumpStatus {
-  ON = "ON",
-  OFF = "OFF",
-  MAINTENANCE = "MAINTENANCE",
-  ERROR = "ERROR",
 }

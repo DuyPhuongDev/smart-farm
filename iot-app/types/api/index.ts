@@ -1,21 +1,4 @@
-export interface Garden {
-  id: number;
-  name: string;
-  cropName: string;
-  cropStage: string;
-  thumbnail: string;
-  location: string;
-  groupName: string;
-  // map id:type
-  // list sensors: SensorInfo[];
-  sensors: {
-    id: number;
-    type: string;
-    feedName: string;
-  }[];
-  lastActivity: string;
-}
-
+import { GardenType } from "@/constants/database";
 export interface User {
   id: string;
   firstName: string;
@@ -48,13 +31,69 @@ export interface SensorInfo {
   unit?: string;
   feedName: string;
   groupName: string;
+  name?: string;
+  status?: PumpStatus;
 }
 
-export type SensorStatus = "normal" | "warning" | "critical" | "on" | "off";
+export type SensorStatus = "normal" | "warning" | "critical";
 
 export interface SensorData {
   sensorId: number;
   value: number;
   status: SensorStatus;
   timestamp: string;
+}
+
+// pump status enum
+export enum PumpStatus {
+  MAINTENANCE = "MAINTENANCE",
+  AUTOMATIC = "AUTOMATIC",
+  MANUAL = "MANUAL",
+  ERROR = "ERROR",
+}
+
+export enum PumpValue {
+  ON = "ON",
+  OFF = "OFF",
+}
+export interface PumpData {
+  sensorId: number;
+  value: PumpValue;
+  lastActivated: string;
+}
+
+export interface ApiResponse<T> {
+  status: number;
+  message: string;
+  data: T;
+  timestamp: string; // ISO datetime string
+  path: string;
+}
+export interface GardenRequest {
+  name: string;
+  cropName: string;
+  cropStage: string;
+  // thumbnail: string;
+  location: string;
+  groupName: string;
+  gardenType: GardenType;
+}
+
+export interface Garden {
+  id: number;
+  name: string;
+  cropName: string;
+  cropStage: string;
+  thumbnail: string;
+  location: string;
+  groupName: string;
+  // map id:type
+  // list sensors: SensorInfo[];
+  sensors: {
+    id: number;
+    type: string;
+    feedName: string;
+  }[];
+  lastActivity: string;
+  gardenType: GardenType;
 }

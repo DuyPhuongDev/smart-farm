@@ -28,7 +28,7 @@ interface CustomAxiosRequestConfig extends AxiosRequestConfig {
 
 // Create API request configuration
 const apiConfig: AxiosRequestConfig = {
-  baseURL: `${env.apiUrl}/${env.apiVersion}`,
+  baseURL: `http://localhost:9999/api/${env.apiVersion}`,
   timeout: env.apiTimeout,
   headers: {
     "Content-Type": "application/json",
@@ -110,8 +110,8 @@ apiClient.interceptors.request.use(async (config) => {
   // Add authentication token if available
   try {
     const data = await getItem<LoginData>(AUTH_KEY);
-    if (data?.access_token) {
-      config.headers.Authorization = `Bearer ${data.access_token}`;
+    if (data?.accessToken) {
+      config.headers.Authorization = `Bearer ${data.accessToken}`;
     }
   } catch (error) {
     console.error("Failed to read auth data from AsyncStorage:", error);

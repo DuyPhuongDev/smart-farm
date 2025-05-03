@@ -52,6 +52,10 @@ export default {
     buttonBackgroundDisabled: "#F5F5F5",
     buttonTextDisabled: "#BBBBBB",
 
+    // Disabled states
+    disabledBackground: "#F5F5F5",
+    disabledForeground: "#CCCCCC",
+
     // Input fields
     inputBackground: "#F7F9FC",
     inputBackgroundFocused: "#FFFFFF",
@@ -165,6 +169,10 @@ export default {
     buttonTextSecondary: "#81C784",
     buttonBackgroundDisabled: "#2A2A2A",
     buttonTextDisabled: "#555555",
+
+    // Disabled states
+    disabledBackground: "#2A2A2A",
+    disabledForeground: "#555555",
 
     // Input fields
     inputBackground: "#1E1E1E",
