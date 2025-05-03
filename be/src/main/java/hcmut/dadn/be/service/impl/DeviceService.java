@@ -56,7 +56,7 @@ public class DeviceService implements IDeviceService {
 
     @Override
     public List<DeviceResponse> getSensorByCurrentUser() throws DataNotFoundException {
-        return deviceRepository.findAllByDeviceTypeIsNotContaining(DeviceType.PUMP).stream().map(DeviceResponse::fromDevice).toList();
+        return deviceRepository.findAllByDeviceTypeNot(DeviceType.PUMP).stream().map(DeviceResponse::fromDevice).toList();
     }
 
     @Override
