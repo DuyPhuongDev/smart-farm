@@ -1,5 +1,6 @@
 package hcmut.dadn.be.controller;
 
+import hcmut.dadn.be.dto.request.RefreshTokenDTO;
 import hcmut.dadn.be.dto.request.UserDTO;
 import hcmut.dadn.be.dto.request.UserLoginDTO;
 import hcmut.dadn.be.exception.InvalidParamException;
@@ -36,9 +37,13 @@ public class UserController {
     }
 
     @PostMapping("/login")
-    public Map<String, Object> login(@Valid @RequestBody UserLoginDTO userLoginDTO){
-            String token = userService.login(userLoginDTO.getEmail(), userLoginDTO.getPassword());
-            return Map.of("accessToken", token);
+    public Map<String, String> login(@Valid @RequestBody UserLoginDTO userLoginDTO){
+            return userService.login(userLoginDTO.getEmail(), userLoginDTO.getPassword());
+    }
+    
+    @PostMapping("/refresh-token")
+    public Map<String, String> refreshToken(@RequestBody RefreshTokenDTO refreshTokenDTO) {
+        return userService.refreshToken(refreshTokenDTO);
     }
 
     @GetMapping("/me")

@@ -40,6 +40,13 @@ public class JwtTokenFilter extends OncePerRequestFilter {
                 return;
             }
             final String token = authHeader.substring(7);
+            
+            // Check if it's a refresh token - we only want to accept access tokens for API authorization
+            if (jwtTokenUtil.isRefreshToken(token)) {
+                response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Cannot use refresh token for API authorization");
+                return;
+            }
+            
             final String username = jwtTokenUtil.extractUsername(token);
             if (username != null
                     && SecurityContextHolder.getContext().getAuthentication() == null) {
@@ -63,7 +70,8 @@ public class JwtTokenFilter extends OncePerRequestFilter {
     private boolean isBypassToken(@NonNull HttpServletRequest request) {
         final List<Pair<String, String>> bypassTokens = Arrays.asList(
                 Pair.of(String.format("%s/auth/register", apiPrefix), "POST"),
-                Pair.of(String.format("%s/auth/login", apiPrefix), "POST")
+                Pair.of(String.format("%s/auth/login", apiPrefix), "POST"),
+                Pair.of(String.format("%s/auth/refresh-token", apiPrefix), "POST")
         );
 
         String requestPath = request.getServletPath();
