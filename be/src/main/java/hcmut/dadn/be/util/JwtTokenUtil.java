@@ -93,9 +93,10 @@ public class JwtTokenUtil {
         return extractClaim(token, Claims::getSubject);
     }
     
-    public Boolean isRefreshToken(String token) {
+    public boolean isRefreshToken(String token) {
         try {
-            return extractClaim(token, claims -> claims.get("isRefreshToken", Boolean.class));
+            Boolean isRefresh = extractClaim(token, claims -> claims.get("isRefreshToken", Boolean.class));
+            return isRefresh != null && isRefresh;
         } catch (Exception e) {
             return false;
         }
