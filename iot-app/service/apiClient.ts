@@ -5,7 +5,7 @@ import axios, {
   AxiosError,
 } from "axios";
 import { getItem, removeItem, setItem } from "@/utils/asyncStorage";
-import { AUTH_KEY, type LoginData } from "@/types";
+import { AUTH_KEY, USER, type LoginData } from "@/types";
 import { AUTH_ENDPOINTS } from "./endpoints";
 import env from "@/config/environment";
 import { Alert } from "react-native";
@@ -57,25 +57,25 @@ const onTokenRefreshed = (token: string) => {
 };
 
 // Function to refresh token
-const refreshToken = async (): Promise<string | null> => {
+const refreshToken = async (refreshToken: string): Promise<string | null> => {
   try {
     // Refresh token is handled by httpOnly cookie
     const response = await axios.post(
-      `${env.apiUrl}/${env.apiVersion}${AUTH_ENDPOINTS.REFRESH}`,
-      {},
+      `http://localhost:9999/api/${env.apiVersion}${AUTH_ENDPOINTS.REFRESH}`,
+      { refreshToken },
       { withCredentials: true }
     );
 
-    // Get the new access token
-    const { access_token } = response.data;
+    // Get the new token
+    const token = response.data.data;
 
     // Update stored token
     try {
       const authData = await getItem<LoginData>(AUTH_KEY);
       if (authData) {
-        await setItem(AUTH_KEY, { ...authData, access_token });
+        await setItem(AUTH_KEY, token);
       }
-      return access_token;
+      return token.accessToken;
     } catch (storageError) {
       console.error(
         "Failed to update auth data in AsyncStorage:",
@@ -87,6 +87,7 @@ const refreshToken = async (): Promise<string | null> => {
     // Failed to refresh token, logout user
     try {
       await removeItem(AUTH_KEY);
+      await removeItem(USER);
     } catch (storageError) {
       console.error(
         "Failed to remove auth data from AsyncStorage:",
@@ -147,7 +148,8 @@ apiClient.interceptors.response.use(
 
       try {
         // Attempt to refresh token
-        const newToken = await refreshToken();
+        const authData = await getItem<LoginData>(AUTH_KEY);
+        const newToken = await refreshToken(authData?.refreshToken || "");
 
         if (newToken) {
           // Update Authorization header with new token

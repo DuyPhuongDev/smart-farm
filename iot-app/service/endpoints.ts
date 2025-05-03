@@ -27,7 +27,7 @@ export const GARDEN_ENDPOINTS = {
 // Lesson endpoints
 export const DEVICE_ENPOINTS = {
   SENSORS: "/devices/sensors",
-  PUMPS: (gardenId: number) => "/devices/{gardenId}/pumps",
+  PUMPS: (gardenId: number) => `/devices/${gardenId}/pumps`,
   CREATE_SENSOR: "/devices/sensor",
   CREATE_PUMP: "/devices/pump",
 };

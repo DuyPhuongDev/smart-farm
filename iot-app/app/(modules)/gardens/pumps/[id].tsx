@@ -17,12 +17,13 @@ import { useGlobal } from "@/contexts/GlobalContext";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { PumpData, SensorInfo, PumpStatus, PumpValue } from "@/types";
 import { updatePumpStatus } from "@/service";
+import gardenService from "@/service/garden.service";
 
 const PUMP_INFO = [
   {
     id: 1,
     name: "Máy bơm 1",
-    gardenId: 1,
+    gardenId: 2,
     gardenName: "Vườn cà chua",
     type: "pump",
     icon: "water-pump",
@@ -33,7 +34,7 @@ const PUMP_INFO = [
   {
     id: 2,
     name: "Máy bơm 2",
-    gardenId: 1,
+    gardenId: 2,
     gardenName: "Vườn cà chua",
     type: "pump",
     icon: "water-pump",
@@ -44,7 +45,7 @@ const PUMP_INFO = [
   {
     id: 3,
     name: "Máy bơm 3",
-    gardenId: 1,
+    gardenId: 3,
     gardenName: "Vườn cà chua",
     type: "pump",
     icon: "water-pump",
@@ -55,7 +56,7 @@ const PUMP_INFO = [
   {
     id: 4,
     name: "Máy bơm 4",
-    gardenId: 1,
+    gardenId: 2,
     gardenName: "Vườn cà chua",
     type: "pump",
     icon: "water-pump",
@@ -87,11 +88,9 @@ export default function PumpActionScreen() {
   const loadPumps = useCallback(async () => {
     if (!gardenId) return;
     setIsLoading(true);
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 700));
     try {
-      const mockPumps = generateMockPumps(parseInt(gardenId));
-      setPumps(mockPumps);
+      const pumps = await gardenService.getPumps(parseInt(gardenId));
+      setPumps(pumps);
     } catch (error) {
       console.error("Failed to load pumps:", error);
     } finally {

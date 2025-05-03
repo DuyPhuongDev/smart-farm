@@ -49,6 +49,8 @@ export function GlobalProvider({ children }: { children: React.ReactNode }) {
   const [mqttMessages, setMqttMessages] = useState<Record<string, string>>({});
   // const [devices, setDevices] = useState<SensorInfo[]>([]);
   const subscribedTopics = useRef<Set<string>>(new Set());
+  // Keep track of ping interval
+  const pingIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   // Fetch devices from API using apiClient
   // const fetchDevices = async () => {
@@ -172,24 +174,49 @@ export function GlobalProvider({ children }: { children: React.ReactNode }) {
       clientId,
       username,
       password,
-      keepalive: 60,
-      reconnectPeriod: 1000,
+      keepalive: 60, // 60 seconds keepalive
+      reconnectPeriod: 3000, // Increased reconnect period from 1000ms to 3000ms
       connectTimeout: 30 * 1000,
+      clean: true, // Use clean sessions
     };
 
-    // Tạo client và thực hiện kết nối
+    // Create client and connect
     const client = connect(mqttBroker, options);
+
+    // Create a ping interval to keep the connection alive
+    const pingInterval = setInterval(() => {
+      if (
+        mqttClientRef.current &&
+        mqttConnectionStateRef.current === "connected"
+      ) {
+        console.log("Sending MQTT ping to keep connection alive");
+        // Publish a small message to keep connection active
+        try {
+          mqttClientRef.current.publish(
+            `${username}/ping`,
+            JSON.stringify({ timestamp: Date.now() })
+          );
+        } catch (err) {
+          console.error("Failed to send ping:", err);
+        }
+      }
+    }, 45000); // Ping every 45 seconds (less than the 60s keepalive)
 
     client.on("connect", () => {
       console.log("✅ Connected to MQTT broker");
       mqttConnectionStateRef.current = "connected";
 
-      // Đăng ký các garden nếu có
+      // Subscribe to gardens if available
       if (gardens) {
         gardens.forEach((garden) => {
           subscribeToGarden(garden.id);
         });
       }
+    });
+
+    client.on("reconnect", () => {
+      console.log("🔄 Attempting to reconnect to MQTT broker...");
+      mqttConnectionStateRef.current = "connecting";
     });
 
     client.on("message", (topic: string, message: any) => {
@@ -234,20 +261,40 @@ export function GlobalProvider({ children }: { children: React.ReactNode }) {
     client.on("close", () => {
       console.log("⚡ MQTT connection closed");
       mqttConnectionStateRef.current = "disconnected";
+      clearInterval(pingInterval); // Clear ping interval on close
     });
 
-    // Lưu client vào mqttClientRef
+    // Store the client reference
     mqttClientRef.current = client;
+
+    // Store the pingInterval reference for cleanup during disconnect
+    pingIntervalRef.current = pingInterval;
+
+    // Return function to clean up the interval if component unmounts
+    return pingIntervalRef.current;
   };
 
   const disconnectFromMQTT = () => {
+    // Clear ping interval if it exists
+    if (pingIntervalRef.current) {
+      clearInterval(pingIntervalRef.current);
+      pingIntervalRef.current = null;
+    }
+
     if (mqttClientRef.current) {
-      // Sử dụng end() để ngắt kết nối với MQTT
-      mqttClientRef.current.end(); // Sử dụng end() từ @taoqf/react-native-mqtt
-      mqttClientRef.current = null;
-      mqttConnectionStateRef.current = "disconnected";
-      setMqttMessages({});
-      subscribedTopics.current.clear();
+      try {
+        // Properly end the MQTT connection
+        mqttClientRef.current.end(false, () => {
+          console.log("MQTT disconnected successfully");
+        });
+      } catch (error) {
+        console.error("Error during MQTT disconnect:", error);
+      } finally {
+        mqttClientRef.current = null;
+        mqttConnectionStateRef.current = "disconnected";
+        setMqttMessages({});
+        subscribedTopics.current.clear();
+      }
     }
   };
 

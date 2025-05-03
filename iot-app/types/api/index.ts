@@ -73,6 +73,7 @@ export interface GardenRequest {
   name: string;
   cropName: string;
   cropStage: string;
+  description: string;
   // thumbnail: string;
   location: string;
   groupName: string;

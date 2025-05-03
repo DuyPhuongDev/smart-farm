@@ -12,14 +12,9 @@ import { Stack, useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAppTheme } from "@/hooks/useAppTheme";
 import { Ionicons } from "@expo/vector-icons";
-
-// TODO: Define GardenType enum or import from constants
-enum GardenType {
-  INDOOR = "INDOOR",
-  OUTDOOR = "OUTDOOR",
-  BALCONY = "BALCONY",
-  ROOFTOP = "ROOFTOP",
-}
+import { GardenType, CropStage } from "@/constants/database";
+import gardenService from "@/service/garden.service";
+import type { GardenRequest } from "@/types";
 
 export default function CreateGardenScreen() {
   const theme = useAppTheme();
@@ -29,12 +24,14 @@ export default function CreateGardenScreen() {
   const [gardenName, setGardenName] = useState("");
   const [description, setDescription] = useState("");
   const [location, setLocation] = useState(""); // Simple location for now
-  const [plantName, setPlantName] = useState("");
+  const [cropName, setCropName] = useState("");
+  const [groupName, setGroupName] = useState(""); // New field for group name
   const [gardenType, setGardenType] = useState<GardenType | null>(null);
+  const [cropStage, setCropStage] = useState<CropStage | null>(null); // New field for crop stage
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     // Basic validation
-    if (!gardenName || !plantName || !gardenType) {
+    if (!gardenName || !cropName || !gardenType) {
       Alert.alert(
         "Thiếu thông tin",
         "Vui lòng nhập tên vườn, loại cây trồng và chọn loại vườn."
@@ -42,19 +39,36 @@ export default function CreateGardenScreen() {
       return;
     }
 
-    // Log the data for now - replace with API call later
-    console.log("Creating garden:", {
+    const newGarden: GardenRequest = {
       name: gardenName,
       description,
       location,
-      plantName,
-      type: gardenType,
-    });
+      cropName,
+      groupName,
+      gardenType: gardenType,
+      cropStage: cropStage || CropStage.Seed, // Default to Seed if not provided
+    };
 
-    Alert.alert("Thành công", "Đã tạo vườn mới (giả lập).", [
-      { text: "OK", onPress: () => router.back() },
-    ]);
+    console.log("New Garden Data:", newGarden);
+    try {
+      await gardenService.createGarden(newGarden);
+      // reset form fields
+      setGardenName("");
+      setDescription("");
+      setLocation("");
+      setCropName("");
+      setGroupName("");
+      setGardenType(null);
+      setCropStage(null);
+      // Show success alert
 
+      Alert.alert("Thành công", "Đã tạo vườn mới.", [
+        { text: "OK", onPress: () => router.back() },
+      ]);
+    } catch (error) {
+      console.error("Error creating garden:", error);
+      Alert.alert("Lỗi", "Đã xảy ra lỗi khi tạo vườn mới.");
+    }
     // TODO: Implement API call to create garden
     // TODO: Navigate back or to the new garden's detail screen
     // router.back();
@@ -104,16 +118,62 @@ export default function CreateGardenScreen() {
           />
         </View>
 
+        {/* Group Name Input */}
+        <View style={styles.inputGroup}>
+          <Text style={styles.label}>Tên Group Adafruit</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="Ví dụ: garden1"
+            value={groupName}
+            onChangeText={setGroupName}
+            placeholderTextColor={theme.textTertiary}
+          />
+        </View>
+
         {/* Plant Name Input */}
         <View style={styles.inputGroup}>
           <Text style={styles.label}>Loại cây trồng chính *</Text>
           <TextInput
             style={styles.input}
             placeholder="Ví dụ: Cà chua, Húng quế"
-            value={plantName}
-            onChangeText={setPlantName}
+            value={cropName}
+            onChangeText={setCropName}
             placeholderTextColor={theme.textTertiary}
           />
+        </View>
+
+        {/* Crop Stage Selection */}
+        <View style={styles.inputGroup}>
+          <Text style={styles.label}>Giai đoạn phát triển</Text>
+          <View style={styles.typeSelectorContainer}>
+            {Object.values(CropStage).map((stage) => (
+              <TouchableOpacity
+                key={stage}
+                style={[
+                  styles.typeButton,
+                  cropStage === stage && styles.typeButtonSelected,
+                ]}
+                onPress={() => setCropStage(stage)}
+              >
+                <Text
+                  style={[
+                    styles.typeButtonText,
+                    cropStage === stage && styles.typeButtonTextSelected,
+                  ]}
+                >
+                  {/* Convert enum to readable Vietnamese text */}
+                  {stage === CropStage.Seed && "Hạt giống"}
+                  {stage === CropStage.Germination && "Nảy mầm"}
+                  {stage === CropStage.Vegetative && "Sinh trưởng"}
+                  {stage === CropStage.Budding && "Ra nụ"}
+                  {stage === CropStage.Flowering && "Ra hoa"}
+                  {stage === CropStage.Fruiting && "Ra quả"}
+                  {stage === CropStage.Maturity && "Trưởng thành"}
+                  {stage === CropStage.Harvest && "Thu hoạch"}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
         </View>
 
         {/* Garden Type Selection */}
