@@ -6,6 +6,9 @@ import hcmut.dadn.be.dto.request.UserLoginDTO;
 import hcmut.dadn.be.exception.InvalidParamException;
 import hcmut.dadn.be.models.User;
 import hcmut.dadn.be.dto.response.UserProfileResponse;
+import hcmut.dadn.be.models.task.TaskStatus;
+import hcmut.dadn.be.repository.DeviceRepository;
+import hcmut.dadn.be.repository.TaskRepository;
 import hcmut.dadn.be.service.IUserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -22,6 +25,8 @@ import java.util.Map;
 @RestController
 public class UserController {
     private final IUserService userService;
+    private final DeviceRepository deviceRepository;
+    private final TaskRepository taskRepository;
 
     @PostMapping("/register")
     public UserProfileResponse create(@Valid @RequestBody UserDTO userDTO
@@ -49,6 +54,9 @@ public class UserController {
     @GetMapping("/me")
     public UserProfileResponse getProfile() {
         User user = userService.getLoggedUser();
-        return UserProfileResponse.fromUser(user);
+        UserProfileResponse userProfileResponse = UserProfileResponse.fromUser(user);
+        userProfileResponse.setSensors(deviceRepository.countAllByUserId(user.getId()));
+        userProfileResponse.setCompletedTask(taskRepository.countByCreatorIdAndStatus(user.getId(), TaskStatus.COMPLETED));
+        return userProfileResponse;
     }
 }

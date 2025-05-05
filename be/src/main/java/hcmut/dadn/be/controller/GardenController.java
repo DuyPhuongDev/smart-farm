@@ -7,6 +7,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import org.springframework.web.bind.annotation.GetMapping;
+
 
 @RestController
 @RequestMapping("${api.prefix}/gardens")
@@ -23,4 +25,10 @@ public class GardenController {
     public GardenResponse createGarden(@RequestBody GardenDTO dto) {
         return gardenService.addGarden(dto);
     }
+
+    @GetMapping("/{id}")
+    public GardenResponse getGardenById(@PathVariable Long id) {
+        return gardenService.getGardenById(id);
+    }
+    
 }

@@ -3,7 +3,9 @@ package hcmut.dadn.be.controller;
 import hcmut.dadn.be.dto.request.PumpDTO;
 import hcmut.dadn.be.dto.request.SensorDTO;
 import hcmut.dadn.be.dto.response.DeviceResponse;
+import hcmut.dadn.be.dto.response.HourlySensorDataResponse;
 import hcmut.dadn.be.service.IDeviceService;
+import hcmut.dadn.be.service.impl.SensorDataService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -14,6 +16,7 @@ import java.util.List;
 @RequestMapping("${api.prefix}/devices")
 public class DeviceController {
     private final IDeviceService deviceService;
+    private final SensorDataService sensorDataService;
 
     @GetMapping("/sensors")
     public List<DeviceResponse> getAllSensors() {
@@ -34,4 +37,8 @@ public class DeviceController {
         return deviceService.createPump(dto);
     }
 
+    @GetMapping("/{id}/sensor-data")
+    public List<HourlySensorDataResponse> getSensorData(@PathVariable Long id) {
+        return sensorDataService.getHourlyAverage(id);
+    }
 }

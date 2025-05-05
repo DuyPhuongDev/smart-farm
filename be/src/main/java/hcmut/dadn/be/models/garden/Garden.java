@@ -28,6 +28,9 @@ public class Garden {
     private String gardenName;
     private String description;
     private String location;
+    private String city;
+    private String district;
+    private String ward;
     private String cropName;
     private String cropStage;
     private String thumbnail;

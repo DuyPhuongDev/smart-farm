@@ -13,6 +13,7 @@ import java.time.LocalDateTime;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class SensorData {
 
     @Id
@@ -20,9 +21,6 @@ public class SensorData {
     private Long dataId;
 
     private Float value;
-
-    @Enumerated(EnumType.STRING)
-    private SensorAlert sensorAlert;
 
     @CreationTimestamp
     @Column(updatable = false)

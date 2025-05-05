@@ -6,7 +6,6 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -22,10 +21,15 @@ public class GardenResponse {
     private String cropStage;
     private String thumbnail;
     private String location;
+    private String city;
+    private String district;
+    private String ward;
     private String groupName;
     private String gardenType;
     private List<Map<String, Object>> sensors;
     private String lastActivity;
+    private String createAt;
+    private String updateAt;
 
     public static GardenResponse fromGarden(Garden garden) {
         List<Map<String, Object>> sensors = garden.getDevices().stream().map(d -> {
@@ -40,12 +44,17 @@ public class GardenResponse {
                 .name(garden.getGardenName())
                 .cropName(garden.getCropName())
                 .location(garden.getLocation())
+                .city(garden.getCity())
+                .district(garden.getDistrict())
+                .ward(garden.getWard())
                 .cropStage(garden.getCropStage())
                 .thumbnail(garden.getThumbnail())
                 .groupName(garden.getGroupName())
                 .gardenType(garden.getGardenType().name())
                 .sensors(sensors)
-                .lastActivity("")
+                .lastActivity("Không có hoạt động nào gần đây!")
+                .createAt(garden.getCreatedAt().toString())
+                .updateAt(garden.getUpdatedAt().toString())
                 .build();
     }
 }

@@ -13,6 +13,7 @@ import java.time.LocalDateTime;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class PumpHistory {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

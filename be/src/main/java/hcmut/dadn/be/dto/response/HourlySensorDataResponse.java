@@ -17,5 +17,5 @@ public class HourlySensorDataResponse {
     private Float value; // Giá trị trung bình của sensor (temperature, moisture, hoặc lux)
     
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
-    private LocalDateTime hour; // Đại diện cho giờ của dữ liệu (ví dụ: 2023-05-20 09:00:00)
+    private LocalDateTime timestamp; // Đại diện cho giờ của dữ liệu (ví dụ: 2023-05-20 09:00:00)
 } 

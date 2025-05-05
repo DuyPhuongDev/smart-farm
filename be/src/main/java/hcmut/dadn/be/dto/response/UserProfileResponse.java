@@ -19,7 +19,6 @@ import java.util.Objects;
 @Builder
 public class UserProfileResponse {
     private Long id;
-
     private String firstName;
     private String lastName;
     private String email;
@@ -28,6 +27,8 @@ public class UserProfileResponse {
     private Long roleId;
     private String roleName;
     private List<Map<String, Object>> gardens;
+    private Integer sensors;
+    private Integer completedTask;
     
     public static UserProfileResponse fromUser(User user) {
         List<Map<String, Object>> gardens = user.getGardens().stream().map(garden -> {

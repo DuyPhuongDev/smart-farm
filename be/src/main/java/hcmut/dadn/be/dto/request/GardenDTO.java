@@ -10,7 +10,11 @@ public class GardenDTO {
     private String cropName;
     private String cropStage;
     private String description;
+    private String thumbnail;
     private String location;
+    private String city;
+    private String district;
+    private String ward;
     private String groupName;
     private String gardenType;
 }
