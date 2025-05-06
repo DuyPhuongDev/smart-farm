@@ -9,7 +9,7 @@ import java.util.List;
 public interface UserDeviceTokenRepository extends JpaRepository<UserDeviceToken, Long> {
     List<UserDeviceToken> findAllByUser(User user);
 
-    boolean existsByUser(User user);
+    boolean existsByUserAndDeviceToken(User user, String deviceToken);
 
     UserDeviceToken findByDeviceToken(String token);
 }

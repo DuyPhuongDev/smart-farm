@@ -24,6 +24,8 @@ public class UserProfileResponse {
     private String email;
     private String phoneNumber;
     private String profilePicture;
+    private String address;
+    private String dateOfBirth;
     private Long roleId;
     private String roleName;
     private List<Map<String, Object>> gardens;
@@ -42,9 +44,13 @@ public class UserProfileResponse {
                 .firstName(user.getFirstName())
                 .lastName(user.getLastName())
                 .email(user.getEmail())
+                .address(user.getAddress())
+                .dateOfBirth(user.getDateOfBirth().toString())
                 .phoneNumber(user.getPhoneNumber())
                 .profilePicture(user.getProfilePicture())
                 .gardens(gardens)
+                .roleId(1L)
+                .roleName("GARDENER")
                 .build();
     }
 } 

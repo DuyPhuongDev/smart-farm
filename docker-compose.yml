@@ -7,15 +7,11 @@ services:
     ports:
       - "9999:8080"
     environment:
-      - PREDICT_API_URL=http://predict_api:8000/predict
-    networks:
-      - iot_network
-
-  predict_api:
-    build: ./model_ML
-    container_name: predict_api
-    ports:
-      - "8888:8000"
+      - AIO_USERNAME=dphuongdev
+      - AIO_KEY=aio_vWpj24h5lR0GXgS89014cgLEOnll
+      - MQTT_BROKER=tcp://io.adafruit.com:1883
+      - CLIENT_ID=springboot-client
+      - JWT_SECRETKEY=78r42g3pro9qvy24q/we/d/vf/c/dsv/c1/c/sdacdvsdasav5hdhdsshjs
     networks:
       - iot_network
 
