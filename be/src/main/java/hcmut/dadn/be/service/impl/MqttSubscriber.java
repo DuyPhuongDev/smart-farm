@@ -9,8 +9,6 @@ import hcmut.dadn.be.models.device.DeviceType;
 import hcmut.dadn.be.models.notification.UserDeviceToken;
 import hcmut.dadn.be.repository.DeviceRepository;
 import hcmut.dadn.be.repository.PumpHistoryRepository;
-import hcmut.dadn.be.repository.SensorDataRepository;
-import hcmut.dadn.be.repository.GardenRepository;
 import hcmut.dadn.be.service.IExpoNotificationService;
 import hcmut.dadn.be.util.DeviceCache;
 import hcmut.dadn.be.util.SensorDataBatchSaver;
@@ -20,10 +18,11 @@ import org.eclipse.paho.client.mqttv3.*;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.context.event.EventListener;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 @Service
 @RequiredArgsConstructor
@@ -36,12 +35,29 @@ public class MqttSubscriber implements MqttCallback {
    private final PumpHistoryRepository pumpHistoryRepository;
    private final DeviceRepository deviceRepository;
    private final IExpoNotificationService notificationService;
+   private final AtomicBoolean reconnecting = new AtomicBoolean(false);
 
    @Value("${AIO_USERNAME}")
    private String username;
 
    @EventListener(ContextRefreshedEvent.class)
     public void subscribe() throws Exception {
+        configureAndConnect();
+    }
+
+    private void configureAndConnect() throws Exception {
+        // Thiết lập các tùy chọn kết nối với keep-alive ngắn hơn
+        MqttConnectOptions options = new MqttConnectOptions();
+        options.setAutomaticReconnect(true);
+        options.setCleanSession(true);
+        options.setConnectionTimeout(30);
+        options.setKeepAliveInterval(60); // 60 giây cho keep-alive
+
+        // Kết nối với các tùy chọn đã cấu hình
+        if (!mqttClient.isConnected()) {
+            mqttClient.connect(options);
+        }
+        
         mqttClient.setCallback(this);
 
         // Lấy toàn bộ tên feed từ repository (bao gồm group.feed format)
@@ -55,19 +71,44 @@ public class MqttSubscriber implements MqttCallback {
         }
     }
 
-
    @Override
    public void connectionLost(Throwable cause) {
-       System.err.println("❌ Mất kết nối MQTT: " + cause.getMessage());
-       // Tự động kết nối lại
-       while (!mqttClient.isConnected()) {
+       log.error("❌ Mất kết nối MQTT: {}", cause.getMessage());
+       attemptReconnect();
+   }
+   
+   private void attemptReconnect() {
+       // Đảm bảo chỉ một luồng đang cố gắng kết nối lại
+       if (reconnecting.compareAndSet(false, true)) {
            try {
-               Thread.sleep(5000);  // Đợi 5 giây rồi thử kết nối lại
-               mqttClient.reconnect();
-               log.info("🔄 Đã kết nối lại MQTT thành công!");
+               log.info("🔄 Đang thử kết nối lại MQTT...");
+               // Cố gắng kết nối lại tối đa 5 lần
+               int attempts = 0;
+               while (!mqttClient.isConnected() && attempts < 5) {
+                   try {
+                       attempts++;
+                       Thread.sleep(5000);  // Đợi 5 giây rồi thử kết nối lại
+                       configureAndConnect();
+                       log.info("🔄 Đã kết nối lại MQTT thành công sau {} lần thử!", attempts);
+                       break;
+                   } catch (Exception e) {
+                       log.error("⚠️ Lần thử kết nối lại thứ {}: {}", attempts, e.getMessage());
+                   }
+               }
            } catch (Exception e) {
-               log.error("⚠️ Lỗi khi kết nối lại MQTT: {}", e.getMessage());
+               log.error("⚠️ Lỗi trong quá trình kết nối lại: {}", e.getMessage());
+           } finally {
+               reconnecting.set(false);
            }
+       }
+   }
+
+   // Kiểm tra kết nối định kỳ (1 phút một lần) và kết nối lại nếu cần
+   @Scheduled(fixedRate = 60000)
+   public void checkConnection() {
+       if (!mqttClient.isConnected() && !reconnecting.get()) {
+           log.warn("⚠️ Phát hiện mất kết nối trong quá trình kiểm tra định kỳ");
+           attemptReconnect();
        }
    }
 
@@ -114,6 +155,7 @@ public class MqttSubscriber implements MqttCallback {
                 log.info("✅ Đã cập nhật trạng thái bơm: {}", pumpHistory);
                 return;
             }
+ 
 
            // Nếu không phải pump → đẩy vào batch saver
            SensorData sensorData = SensorData.builder()

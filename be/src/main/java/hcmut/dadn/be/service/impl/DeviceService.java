@@ -63,4 +63,5 @@ public class DeviceService implements IDeviceService {
     public List<DeviceResponse> getPumpByCurrentUser(Long gardenId) throws DataNotFoundException {
         return deviceRepository.findAllByDeviceTypeAndGardenId(DeviceType.PUMP, gardenId).stream().map(DeviceResponse::fromDevice).toList();
     }
+
 }
