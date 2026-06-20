@@ -1,6 +1,6 @@
 import json
 from confluent_kafka import Producer
-from logger_config import logger
+from config.logger_config import logger
 
 
 class KafkaProducerClient:

@@ -1,7 +1,7 @@
 package hcmut.dadn.be.util;
 
 import hcmut.dadn.be.exception.InvalidParamException;
-import hcmut.dadn.be.models.User;
+import hcmut.dadn.be.models.user.User;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;

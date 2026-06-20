@@ -1,5 +1,7 @@
 import json
-from avrc_schema import SensorData, SENSOR_DATA_SCHEMA, PROCESSED_DATA_SCHEMA
+import psycopg2
+from datetime import datetime
+from config.avrc_schema import SensorData, SENSOR_DATA_SCHEMA
 from confluent_kafka.schema_registry import SchemaRegistryClient
 from confluent_kafka.schema_registry.avro import AvroDeserializer, AvroSerializer
 from confluent_kafka.serialization import (MessageField, SerializationContext)
@@ -12,8 +14,9 @@ from pyflink.common.serialization import ByteArraySchema, SerializationSchema, S
 from pyflink.datastream.connectors.kafka import KafkaSource, KafkaOffsetsInitializer, KafkaSink, KafkaRecordSerializationSchema
 from pyflink.common.watermark_strategy import WatermarkStrategy, TimestampAssigner
 from pyflink.datastream import StreamExecutionEnvironment, ProcessWindowFunction, AggregateFunction, MapFunction, RuntimeContext
-from config import config
-from logger_config import logger
+from config.config import config
+from config.logger_config import logger
+
 
 def filter_anomalous_data(event):
     """Filter out anomalous sensor data"""
@@ -30,15 +33,13 @@ def filter_anomalous_data(event):
 
 def convert_processed_data(t):
     dict_data = {
-        "group_name": t[0],
-        "feed_name": t[1],
+        "time": t[0],
+        "device_id": t[1],
         "sensor_type": t[2],
-        "window_start": t[3],
-        "window_end": t[4],
-        "avg_value": float(t[5]),
-        "min_value": float(t[6]),
-        "max_value": float(t[7]),
-        "count": int(t[8]),
+        "avg_value": float(t[3]),
+        "min_value": float(t[4]),
+        "max_value": float(t[5]),
+        "count": int(t[6])
     }
     return json.dumps(dict_data)
 
@@ -89,15 +90,13 @@ class AvgProcess(ProcessWindowFunction):
         total, count, min_value, max_value = next(iter(aggregates))
         avg_value = total / count if count != 0 else 0
         yield (
-            key[0],
-            key[1],
-            key[2],
-            context.window().start,
-            context.window().end,
-            round(avg_value, 2),
-            round(min_value, 2),
-            round(max_value, 2),
-            count
+            context.window().start,  # time (window_start as timestamp in ms)
+            key[0],                  # device_id
+            key[1],                  # sensor_type
+            round(avg_value, 2),     # avg_value
+            round(min_value, 2),     # min_value
+            round(max_value, 2),     # max_value
+            count                    # count
         )
         
 class AvroValueSerializationSchema(SerializationSchema):
@@ -120,6 +119,77 @@ class AvroValueSerializationSchema(SerializationSchema):
         )
 
 
+class PostgreSQLWriter(MapFunction):
+    """MapFunction to write data to PostgreSQL/TimescaleDB as a side effect"""
+    
+    def __init__(self, db_config):
+        self.db_config = db_config
+        self.connection = None
+        self.cursor = None
+    
+    def open(self, runtime_context: RuntimeContext):
+        """Initialize database connection when map function is opened"""
+        try:
+            self.connection = psycopg2.connect(
+                host=self.db_config['host'],
+                port=self.db_config['port'],
+                database=self.db_config['database'],
+                user=self.db_config['user'],
+                password=self.db_config['password']
+            )
+            self.cursor = self.connection.cursor()
+            logger.info("PostgreSQL connection established successfully")
+        except Exception as e:
+            logger.error(f"Failed to connect to PostgreSQL: {e}")
+            raise
+    
+    def map(self, value):
+        """Insert record into PostgreSQL and return the value for further processing"""
+        try:
+            # value is a tuple: (time_ms, device_id, sensor_type, avg_value, min_value, max_value, count)
+            time_ms = value[0]
+            device_id = value[1]
+            sensor_type = value[2]
+            avg_value = value[3]
+            min_value = value[4]
+            max_value = value[5]
+            count = value[6]
+            
+            # Convert milliseconds to timestamp
+            timestamp = datetime.fromtimestamp(time_ms / 1000.0)
+            
+            # Insert into TimescaleDB
+            insert_query = """
+                INSERT INTO sensor_metrics_30s 
+                (time, device_id, sensor_type, avg_value, min_value, max_value, count)
+                VALUES (%s, %s, %s, %s, %s, %s, %s)
+            """
+            
+            self.cursor.execute(insert_query, (
+                timestamp, device_id, sensor_type, 
+                avg_value, min_value, max_value, count
+            ))
+            self.connection.commit()
+            
+        except Exception as e:
+            logger.error(f"Failed to insert record: {e}")
+            self.connection.rollback()
+        
+        # Return the value for further processing
+        return value
+    
+    def close(self):
+        """Close database connection when map function is closed"""
+        try:
+            if self.cursor:
+                self.cursor.close()
+            if self.connection:
+                self.connection.close()
+            logger.info("PostgreSQL connection closed")
+        except Exception as e:
+            logger.error(f"Error closing PostgreSQL connection: {e}")
+
+
 def main():
     """Main application entry point for data processing"""
     
@@ -130,6 +200,17 @@ def main():
     # init Flink execution environment
     env = StreamExecutionEnvironment.get_execution_environment()
     env.set_runtime_mode(RuntimeExecutionMode.STREAMING)
+    
+    # Add JDBC JAR dependencies to the environment
+    import os
+    jar_dir = os.path.dirname(os.path.abspath(__file__))
+    jars = [
+        os.path.join(jar_dir, "flink-connector-jdbc-3.3.0-1.20.jar"),
+        os.path.join(jar_dir, "postgresql-42.7.8.jar"),
+        os.path.join(jar_dir, "flink-sql-connector-kafka-4.0.1-2.0.jar")
+    ]
+    env.add_jars(*[f"file://{jar}" for jar in jars])
+    
     # Event time is now the default and configured via WatermarkStrategy
     
     # configure Kafka source
@@ -160,27 +241,39 @@ def main():
     
     # compute 30-second average
     avg_1m = clean \
-    .key_by(lambda e: (e["group_name"], e["feed_name"], e["sensor_type"])) \
+    .key_by(lambda e: (e["device_id"], e["sensor_type"])) \
     .window(TumblingEventTimeWindows.of(Time.seconds(30))) \
     .aggregate(
         AvgAgg(),
         AvgProcess(),
         output_type=Types.TUPLE([
-                        Types.STRING(),  # group_name
-                        Types.STRING(),  # feed_name
+                        Types.LONG(),    # time (window_start)
+                        Types.INT(),     # device_id
                         Types.STRING(),  # sensor_type
-                        Types.LONG(),    # window_start
-                        Types.LONG(),    # window_end
-                        Types.FLOAT(),   # avg
-                        Types.FLOAT(),   # min
-                        Types.FLOAT(),   # max
+                        Types.FLOAT(),   # avg_value
+                        Types.FLOAT(),   # min_value
+                        Types.FLOAT(),   # max_value
                         Types.LONG(),    # count
                     ])
     )
     
     avg_1m.print()
     
-    avro_ready = avg_1m.map(
+    # Write to PostgreSQL/TimescaleDB using MapFunction
+    postgres_config = {
+        'host': 'localhost',
+        'port': 5432,
+        'database': 'smart_farm',
+        'user': 'postgres',
+        'password': 'postgres'
+    }
+    
+    postgres_writer = PostgreSQLWriter(postgres_config)
+    
+    # Write to PostgreSQL and pass data through for Kafka sink
+    avg_with_postgres = avg_1m.map(postgres_writer)
+    
+    avro_ready = avg_with_postgres.map(
         convert_processed_data,
         Types.STRING()
     )

@@ -1,7 +1,5 @@
 import os
 from dataclasses import dataclass, field
-from typing import List, Dict
-
 
 @dataclass
 class AdafruitIOConfig:
@@ -24,15 +22,21 @@ class KafkaConfig:
     processed_topic: str = os.getenv('KAFKA_PROCESSED_TOPIC', 'iot.sensor.processed.v1')
     client_id: str = os.getenv('KAFKA_CLIENT_ID', 'iot-mqtt-producer')
     flink_group_id: str = os.getenv('KAFKA_GROUP_ID', 'flink-job-group')
-
-
+    
 @dataclass
-class FeedConfig:
-    """MQTT Feed configuration"""
-    group: str
-    feed: str
-
-
+class EtcdConfig:
+    """Etcd configuration"""
+    host: str = os.getenv('ETCD_HOST', 'localhost')
+    port: int = os.getenv('ETCD_PORT', 2379)
+    prefix: str = os.getenv('ETCD_PREFIX', '/iot/devices/')
+    
+@dataclass
+class DeviceConfig:
+    """Device configuration"""
+    mqtt_topic: str
+    sensor_type: str
+    enabled: bool = True
+    
 @dataclass
 class AppConfig:
     """Main application configuration"""
@@ -46,19 +50,8 @@ class AppConfig:
     # Schema Registry
     schema_registry: SchemaRegistryConfig = field(default_factory=SchemaRegistryConfig)
     
-    # MQTT Feeds to subscribe
-    feeds: List[Dict[str, str]] = field(default_factory=lambda: [
-        {"group": "garden-1", "feed": "humidity"},
-        {"group": "garden-1", "feed": "moisture"},
-        {"group": "garden-1", "feed": "temperature"},
-    ])
-    
-    # Sensor type mapping
-    sensor_types: Dict[str, str] = field(default_factory=lambda: {
-        "humidity": "HUMIDITY",
-        "moisture": "MOISTURE",
-        "temperature": "TEMPERATURE"
-    })
+    # Etcd
+    etcd: EtcdConfig = field(default_factory=EtcdConfig)
     
     # Logging
     log_level: str = os.getenv('LOG_LEVEL', 'INFO')

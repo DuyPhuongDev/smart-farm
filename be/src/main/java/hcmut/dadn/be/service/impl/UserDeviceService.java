@@ -3,7 +3,7 @@ package hcmut.dadn.be.service.impl;
 import hcmut.dadn.be.dto.request.DeviceTokenDTO;
 import hcmut.dadn.be.exception.DataAlreadyExistsException;
 import hcmut.dadn.be.exception.DataNotFoundException;
-import hcmut.dadn.be.models.User;
+import hcmut.dadn.be.models.user.User;
 import hcmut.dadn.be.models.notification.UserDeviceToken;
 import hcmut.dadn.be.repository.UserDeviceTokenRepository;
 import hcmut.dadn.be.repository.UserRepository;

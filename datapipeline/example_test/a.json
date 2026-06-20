@@ -1,0 +1,5 @@
+{
+  "mqtt_topic": "garden-1.humidity",
+  "sensor_type": "HUMIDITY",
+  "enabled": true
+}

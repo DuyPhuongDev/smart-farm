@@ -61,8 +61,49 @@ services:
     networks:
       - kafka-net
 
+  database:
+    image: timescale/timescaledb:latest-pg17
+    container_name: timescaledb
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: smart_farm
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - kafka-net
+
+  etcd:
+    image: quay.io/coreos/etcd:v3.6.0
+    container_name: etcd
+    hostname: etcd-1
+    ports:
+      - "2379:2379"
+      - "2380:2380"
+    command:
+      - /usr/local/bin/etcd
+      - --name=etcd-1
+      - --data-dir=/etcd-data
+
+      # client
+      - --listen-client-urls=http://0.0.0.0:2379
+      - --advertise-client-urls=http://localhost:2379
+
+      # peer
+      - --listen-peer-urls=http://0.0.0.0:2380
+      - --initial-advertise-peer-urls=http://etcd-1:2380
+      - --initial-cluster=etcd-1=http://etcd-1:2380
+      - --initial-cluster-state=new
+    networks:
+      - kafka-net
+    volumes:
+      - ./data/etcd-data:/etcd-data
+
 volumes:
   kafka-data-1:
+  pgdata:
 
 networks:
   kafka-net:

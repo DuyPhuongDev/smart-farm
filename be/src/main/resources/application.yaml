@@ -1,0 +1,27 @@
+spring:
+  datasource:
+    username: postgres
+    password: postgres
+    url: jdbc:postgresql://localhost:5432/smart_farm
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        default_schema: public
+        jdbc:
+          batch_size: 20
+    hibernate:
+      ddl-auto: validate
+server:
+  port: 9999
+  address: 0.0.0.0
+
+api:
+  prefix: /api/v1
+
+jwt:
+  expiration:
+    access: 900000
+    refresh: 604800000
+  secret: 78r42g3pro9qvy24q/we/d/vf/c/dsv/c1/c/sdacdvsdasav5hdhdsshjs

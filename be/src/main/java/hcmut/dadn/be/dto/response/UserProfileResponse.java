@@ -1,14 +1,12 @@
 package hcmut.dadn.be.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import hcmut.dadn.be.models.User;
+import hcmut.dadn.be.models.user.User;
 import lombok.*;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 
 @Data
 @Getter

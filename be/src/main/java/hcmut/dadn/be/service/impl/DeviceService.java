@@ -12,7 +12,6 @@ import hcmut.dadn.be.repository.GardenRepository;
 import hcmut.dadn.be.service.IDeviceService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.eclipse.paho.client.mqttv3.MqttException;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;

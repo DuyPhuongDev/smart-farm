@@ -1,6 +1,6 @@
 package hcmut.dadn.be.models.task;
 
-import hcmut.dadn.be.models.User;
+import hcmut.dadn.be.models.user.User;
 import hcmut.dadn.be.models.garden.Garden;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;

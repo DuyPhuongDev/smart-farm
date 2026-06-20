@@ -2,7 +2,7 @@ package hcmut.dadn.be.service.impl;
 
 import hcmut.dadn.be.dto.request.NotificationRequest;
 import hcmut.dadn.be.models.notification.Notification;
-import hcmut.dadn.be.models.User;
+import hcmut.dadn.be.models.user.User;
 import hcmut.dadn.be.repository.NotificationRepository;
 import hcmut.dadn.be.repository.UserDeviceTokenRepository;
 import hcmut.dadn.be.service.IExpoNotificationService;
