@@ -1,6 +1,6 @@
 package hcmut.dadn.be.models.notification;
 
-import hcmut.dadn.be.models.User;
+import hcmut.dadn.be.models.user.User;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;

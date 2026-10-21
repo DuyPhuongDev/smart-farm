@@ -1,5 +1,6 @@
-package hcmut.dadn.be.models;
+package hcmut.dadn.be.models.user;
 
+import hcmut.dadn.be.models.BaseEntity;
 import hcmut.dadn.be.models.garden.Garden;
 import hcmut.dadn.be.models.notification.Notification;
 import hcmut.dadn.be.models.notification.UserDeviceToken;
@@ -24,7 +25,7 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class User implements UserDetails {
+public class User extends BaseEntity implements UserDetails {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -51,15 +52,12 @@ public class User implements UserDetails {
 
     private String address;
 
-    @CreationTimestamp
-    @Column(updatable = false)
-    private LocalDateTime createdAt;
-
-    @UpdateTimestamp
-    private LocalDateTime updatedAt;
+    @ManyToOne
+    @JoinColumn(name = "role_id", nullable = false)
+    private Role role;
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
-    private List<UserDeviceToken> deviceTokens = new ArrayList<>();
+    private List<UserDeviceToken> deviceTokens;
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Notification> notifications = new ArrayList<>();

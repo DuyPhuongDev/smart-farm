@@ -1,18 +1,17 @@
 package hcmut.dadn.be.models.notification;
 
-import hcmut.dadn.be.models.User;
+import hcmut.dadn.be.models.BaseEntity;
+import hcmut.dadn.be.models.user.User;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 @Entity
-@Data
+@Setter
+@Getter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class UserDeviceToken {
+public class UserDeviceToken extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;

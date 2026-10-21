@@ -4,7 +4,7 @@ import hcmut.dadn.be.dto.request.RefreshTokenDTO;
 import hcmut.dadn.be.dto.request.UserDTO;
 import hcmut.dadn.be.dto.request.UserLoginDTO;
 import hcmut.dadn.be.exception.InvalidParamException;
-import hcmut.dadn.be.models.User;
+import hcmut.dadn.be.models.user.User;
 import hcmut.dadn.be.dto.response.UserProfileResponse;
 import hcmut.dadn.be.models.task.TaskStatus;
 import hcmut.dadn.be.repository.DeviceRepository;

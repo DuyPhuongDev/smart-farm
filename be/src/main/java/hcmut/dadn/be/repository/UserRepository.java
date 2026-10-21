@@ -1,5 +1,5 @@
 package hcmut.dadn.be.repository;
-import hcmut.dadn.be.models.User;
+import hcmut.dadn.be.models.user.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

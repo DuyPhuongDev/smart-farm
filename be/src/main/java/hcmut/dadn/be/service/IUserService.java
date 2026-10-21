@@ -5,7 +5,7 @@ import hcmut.dadn.be.dto.request.RefreshTokenDTO;
 import hcmut.dadn.be.dto.request.UserDTO;
 import hcmut.dadn.be.exception.DataNotFoundException;
 import hcmut.dadn.be.exception.InvalidParamException;
-import hcmut.dadn.be.models.User;
+import hcmut.dadn.be.models.user.User;
 
 import java.util.Map;
 

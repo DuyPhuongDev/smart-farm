@@ -1,5 +1,6 @@
 package hcmut.dadn.be.models.device;
 
+import hcmut.dadn.be.models.BaseEntity;
 import hcmut.dadn.be.models.garden.Garden;
 import hcmut.dadn.be.models.data.PumpStatus;
 import hcmut.dadn.be.models.data.SensorData;
@@ -13,14 +14,15 @@ import java.util.List;
 
 @Entity
 @Table(name = "devices")
-@Data
+@Setter
+@Getter
 @NoArgsConstructor
 @Builder
 @AllArgsConstructor
-public class Device {
+public class Device extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long deviceId;
+    private Long id;
 
     @Column(nullable = false, length = 100)
     private String deviceName;

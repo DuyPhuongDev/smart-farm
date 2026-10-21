@@ -1,1 +1,80 @@
+# OS
 .DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+*.iml
+.project
+.classpath
+.settings/
+
+# Java/Maven
+be/target/
+*.class
+*.jar
+*.war
+*.ear
+*.log
+.mvn/
+
+# Python
+datapipeline/__pycache__/
+datapipeline/*.pyc
+datapipeline/*.pyo
+datapipeline/*.pyd
+datapipeline/.Python
+datapipeline/venv/
+datapipeline/env/
+datapipeline/.venv/
+datapipeline/logs/
+*.py[cod]
+*$py.class
+.ipynb_checkpoints/
+
+# Node.js/React Native
+smart-garden/node_modules/
+smart-garden/.expo/
+smart-garden/.expo-shared/
+smart-garden/dist/
+smart-garden/npm-debug.*
+smart-garden/yarn-error.*
+smart-garden/yarn-debug.*
+smart-garden/.pnp.*
+smart-garden/web-build/
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.orig.*
+
+# Environment & Secrets
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+*.env
+datapipeline/export_env.sh
+
+# Docker
+*.log
+
+# Build outputs
+build/
+dist/
+*.tgz
+
+# Testing
+coverage/
+.nyc_output/
+
+# Misc
+*.bak
+*.tmp
+*.temp
